@@ -67,7 +67,38 @@ function doPost(e) {
 }
 
 function doGet(e) {
-  return ContentService.createTextOutput('竹光國中 115學年度新生入學總量管制 LINE Bot 服務正常運作中！');
+  return HtmlService.createHtmlOutputFromFile('index')
+    .setTitle('竹光國中 115學年度總量管制 - 智慧控制台')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+// 供前端 index.html 透過 google.script.run 取得試算表問答清單
+function getKnowledgeBaseData() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (!ss) return [];
+    const ws = ss.getSheetByName(CONFIG.SHEET_QA);
+    if (!ws) return [];
+    const data = ws.getDataRange().getValues();
+    if (data.length <= 1) return [];
+    const list = [];
+    for (let i = 1; i < data.length; i++) {
+      list.push({
+        id: data[i][0],
+        category: data[i][1],
+        keywords: data[i][2],
+        question: data[i][3],
+        answer: data[i][4],
+        note: data[i][5],
+        status: data[i][6]
+      });
+    }
+    return list;
+  } catch (err) {
+    console.error('getKnowledgeBaseData error:', err);
+    return [];
+  }
 }
 
 // ======================= 訊息處理核心 =======================

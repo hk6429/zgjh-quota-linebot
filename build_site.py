@@ -1,20 +1,30 @@
 # -*- coding: utf-8 -*-
 """
-新竹市立竹光國中 115學年度新生入學總量管制 LINE Bot 智慧小幫手導覽網站建置腳本
-生成高質感、可直接部屬至 Netlify 的靜態單頁網頁 (index.html)
+新竹市立竹光國中 115學年度新生總量管制 LINE Bot 智慧小幫手
+專案靜態導覽網站生成腳本 (build.py)
+精確處理 HTML/CSS/JS 標籤與全量前後端代碼注入，保證無 JS 語法錯誤
 """
 
 import os
+import html
+import json
 
-# 讀取完整的 Code.gs 內容供網頁內「一鍵複製」使用
-codegs_path = os.path.join(os.path.dirname(__file__), 'Code.gs')
-with open(codegs_path, 'r', encoding='utf-8') as f:
-    full_codegs_text = f.read()
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CODE_GS_PATH = os.path.join(BASE_DIR, 'Code.gs')
+GAS_INDEX_PATH = os.path.join(BASE_DIR, 'gas_index.html')
+OUTPUT_PATH = os.path.join(BASE_DIR, 'index.html')
 
-# 轉義字串供 JS 變數使用
-js_escaped_codegs = full_codegs_text.replace('\\', '\\\\').replace('`', '\\`').replace('$', '\\$')
+with open(CODE_GS_PATH, 'r', encoding='utf-8') as f:
+    code_gs_content = f.read()
 
-html_content = r'''<!DOCTYPE html>
+with open(GAS_INDEX_PATH, 'r', encoding='utf-8') as f:
+    gas_index_content = f.read()
+
+# 轉義用於 pre/code 標籤與 hidden textarea 內安全顯示
+escaped_code_gs = html.escape(code_gs_content)
+escaped_gas_index = html.escape(gas_index_content)
+
+html_template = """<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
@@ -58,7 +68,7 @@ html_content = r'''<!DOCTYPE html>
           }
         }
       }
-    }
+    };
   </script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700;900&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap');
@@ -82,10 +92,10 @@ html_content = r'''<!DOCTYPE html>
       height: 6px;
     }
     .custom-scrollbar::-webkit-scrollbar-track {
-      background: #F1F5F9;
+      background: #0f172a;
     }
     .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: #CBD5E1;
+      background: #334155;
       border-radius: 4px;
     }
     .phone-mockup-shadow {
@@ -126,8 +136,8 @@ html_content = r'''<!DOCTYPE html>
             <span>Google 試算表大腦</span>
           </a>
           <a href="#deploy" class="px-3 sm:px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shadow-sm">
-            <i class="fa-solid fa-rocket text-emerald-400"></i>
-            <span>部署指南</span>
+            <i class="fa-solid fa-code text-emerald-400"></i>
+            <span>前後端完整程式碼</span>
           </a>
         </div>
       </div>
@@ -140,937 +150,617 @@ html_content = r'''<!DOCTYPE html>
     <div class="absolute inset-0 bg-[radial-gradient(circle_at_80%_70%,rgba(59,130,246,0.12),transparent_50%)] pointer-events-none"></div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-      <div class="text-center max-w-3xl mx-auto">
-        <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs text-emerald-300 font-semibold mb-6 shadow-inner">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span>115學年度核定招生 12 班 · 3/14 (六) 現場審核登記</span>
-        </div>
-
-        <h1 class="text-3xl sm:text-5xl font-black tracking-tight leading-tight sm:leading-none text-white mb-6">
-          竹光國中新生入學總量管制<br>
-          <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-blue-400">LINE Bot 智慧諮詢神助手</span>
-        </h1>
-
-        <p class="text-slate-300 text-sm sm:text-base leading-relaxed mb-8 max-w-2xl mx-auto font-normal">
-          告別每年 3 月招生季註冊組電話接到手軟、家長為了「租屋未公證算不算」、「設籍三年排不排得上」、「黃單要帶哪些證件」、「沒錄取改分發去哪」焦慮奔波！
-          透過 <strong>Google 試算表 RAG 知識庫 ＋ LINE Bot</strong>，打造 24 小時線上精準試算的招生諮詢與法規查核護盾。
-        </p>
-
-        <div class="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
-          <a href="#simulator" class="px-6 py-3.5 rounded-xl bg-[#06C755] hover:bg-[#05B34C] text-white text-sm font-bold shadow-lg shadow-emerald-500/25 transition transform active:scale-95 flex items-center space-x-2">
-            <i class="fa-solid fa-comments"></i>
-            <span>進入 LINE 實時模擬體驗</span>
-          </a>
-          <a href="#database" class="px-6 py-3.5 rounded-xl bg-emerald-600/30 hover:bg-emerald-600/40 border border-emerald-400/40 text-emerald-300 text-sm font-bold transition flex items-center space-x-2 backdrop-blur-xs">
-            <i class="fa-solid fa-table"></i>
-            <span>查看 Google 試算表資料庫</span>
-          </a>
-          <a href="#deepdive" class="px-6 py-3.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white text-sm font-bold transition flex items-center space-x-2 backdrop-blur-xs">
-            <i class="fa-solid fa-list-check text-slate-300"></i>
-            <span>查看入學六大順位標準</span>
-          </a>
-        </div>
-
-        <!-- 數據統計小標 -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-12 pt-10 border-t border-white/10 text-left">
-          <div class="bg-white/5 p-4 rounded-2xl border border-white/5 backdrop-blur-xs">
-            <div class="text-2xl font-black text-emerald-400">12 班</div>
-            <div class="text-xs text-slate-400 mt-0.5">115學年度核定招生規模</div>
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        
+        <div class="lg:col-span-7 space-y-6 text-left">
+          <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-emerald-300 text-xs font-semibold backdrop-blur-md">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>新竹市立竹光國民中學 115 學年度新生入學法規同步</span>
           </div>
-          <div class="bg-white/5 p-4 rounded-2xl border border-white/5 backdrop-blur-xs">
-            <div class="text-2xl font-black text-teal-300">6 大順位</div>
-            <div class="text-xs text-slate-400 mt-0.5">法規嚴謹順位階層判定</div>
-          </div>
-          <div class="bg-white/5 p-4 rounded-2xl border border-white/5 backdrop-blur-xs">
-            <div class="text-2xl font-black text-blue-400">7 大工作表</div>
-            <div class="text-xs text-slate-400 mt-0.5">Google 試算表 RAG 資料庫</div>
-          </div>
-          <div class="bg-white/5 p-4 rounded-2xl border border-white/5 backdrop-blur-xs">
-            <div class="text-2xl font-black text-amber-400">0 租金</div>
-            <div class="text-xs text-slate-400 mt-0.5">GAS + Sheets 零伺服器維護</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
 
-  <!-- 雙核心特色介紹 -->
-  <section class="py-16 bg-white border-b border-slate-200">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center max-w-2xl mx-auto mb-12">
-        <span class="text-xs font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">Dual-Core Architecture</span>
-        <h2 class="text-2xl sm:text-3xl font-black text-slate-900 mt-3 tracking-tight">雙視角設計：兼顧家長焦慮與註冊組法規嚴謹</h2>
-        <p class="text-slate-600 text-xs sm:text-sm mt-2">一套機器人，無縫切換家長常見疑問解答與教務同仁現場行政查核指引</p>
-      </div>
+          <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.2] text-white">
+            竹光國中新生總量管制<br>
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-blue-400">
+              LINE Bot 智慧諮詢小幫手
+            </span>
+          </h1>
 
-      <div class="grid md:grid-cols-2 gap-8">
-        <!-- 模組 A：家長端 -->
-        <div class="bg-gradient-to-br from-slate-50 to-emerald-50/40 rounded-3xl p-7 border border-emerald-100/80 shadow-xs relative overflow-hidden flex flex-col justify-between">
-          <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-400/10 rounded-full blur-2xl pointer-events-none"></div>
-          <div>
-            <div class="flex items-center space-x-3 mb-5">
-              <div class="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-2xl shadow-md">
-                <i class="fa-solid fa-users"></i>
-              </div>
-              <div>
-                <span class="text-xs font-bold text-emerald-600 tracking-wide">模組 A · 家長端導引</span>
-                <h3 class="text-lg font-bold text-slate-900">入學資格試算與申請導航</h3>
-              </div>
+          <p class="text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl">
+            將註冊組繁複的總量管制法規（包含六大錄取順位判定、自有所有權狀查驗、公證與未公證租賃契約審查、歷年設籍年限門檻、共同學區選填、未錄取改分發等），轉化為 24 小時在線的 LINE 智慧應答機器人，並以 <strong>Google 試算表作為雲端知識庫與在線工單系統</strong>，支援前端以 <code>#記住 [題目] [回答]</code> 即時動態新增擴充知識庫！
+          </p>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+            <div class="bg-white/5 border border-white/10 p-3.5 rounded-2xl backdrop-blur-xs text-center">
+              <div class="text-2xl font-black text-emerald-400">12 班</div>
+              <div class="text-[11px] text-slate-400 mt-1 font-medium">115學年核定班級數</div>
             </div>
-            
-            <p class="text-slate-600 text-xs sm:text-sm leading-relaxed mb-6">
-              化繁為簡！家長只要輸入家裡的戶籍狀況、租屋或自有房屋條件，小幫手直接秒回判定順位，並提供歷年大數據分析與現場必備文件清單。
-            </p>
-
-            <div class="space-y-3 mb-6">
-              <div class="flex items-start space-x-3 p-3 rounded-xl bg-white border border-slate-200/80 shadow-2xs">
-                <i class="fa-solid fa-calculator text-emerald-500 text-base mt-0.5"></i>
-                <div class="text-xs">
-                  <span class="font-bold text-slate-800">六大順位精準試算</span>
-                  <p class="text-slate-500 mt-0.5">自有權狀、公證租約、未公證租約、無居住證明秒速判定順序。</p>
-                </div>
-              </div>
-              <div class="flex items-start space-x-3 p-3 rounded-xl bg-white border border-slate-200/80 shadow-2xs">
-                <i class="fa-solid fa-chart-line text-emerald-500 text-base mt-0.5"></i>
-                <div class="text-xs">
-                  <span class="font-bold text-slate-800">歷年錄取年份分析</span>
-                  <p class="text-slate-500 mt-0.5">公開 111-114 學年第四順位設籍門檻，協助家長合理評估心理預期。</p>
-                </div>
-              </div>
-              <div class="flex items-start space-x-3 p-3 rounded-xl bg-white border border-slate-200/80 shadow-2xs">
-                <i class="fa-solid fa-clipboard-check text-emerald-500 text-base mt-0.5"></i>
-                <div class="text-xs">
-                  <span class="font-bold text-slate-800">現場黃單應備證件清單</span>
-                  <p class="text-slate-500 mt-0.5">全戶戶籍謄本、新式戶口名簿詳細記事、租賃公證期程要求一目了然。</p>
-                </div>
-              </div>
+            <div class="bg-white/5 border border-white/10 p-3.5 rounded-2xl backdrop-blur-xs text-center">
+              <div class="text-2xl font-black text-blue-400">6 大</div>
+              <div class="text-[11px] text-slate-400 mt-1 font-medium">嚴謹法定分發順位</div>
+            </div>
+            <div class="bg-white/5 border border-white/10 p-3.5 rounded-2xl backdrop-blur-xs text-center">
+              <div class="text-2xl font-black text-amber-400">7 張</div>
+              <div class="text-[11px] text-slate-400 mt-1 font-medium">Google 試算表大腦</div>
+            </div>
+            <div class="bg-white/5 border border-white/10 p-3.5 rounded-2xl backdrop-blur-xs text-center">
+              <div class="text-2xl font-black text-purple-400">0 秒</div>
+              <div class="text-[11px] text-slate-400 mt-1 font-medium">#記住 即時寫入生效</div>
             </div>
           </div>
 
-          <div class="pt-4 border-t border-emerald-100 flex items-center justify-between text-xs text-emerald-800 font-semibold">
-            <span>適用：學區內國小畢業生家長</span>
-            <a href="#simulator" onclick="switchSimMode('parent')" class="inline-flex items-center hover:underline">
-              <span>立即模擬測試</span>
-              <i class="fa-solid fa-arrow-right ml-1"></i>
+          <div class="flex flex-wrap gap-4 pt-4">
+            <a href="#simulator" class="px-6 py-3 rounded-xl bg-gradient-to-r from-[#06C755] to-emerald-600 hover:from-emerald-500 hover:to-emerald-700 text-white font-bold text-sm transition shadow-lg shadow-emerald-900/40 flex items-center space-x-2">
+              <i class="fa-solid fa-play"></i>
+              <span>立即試玩對話模擬器</span>
+            </a>
+            <a href="#deploy" class="px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm transition border border-white/15 backdrop-blur-md flex items-center space-x-2">
+              <i class="fa-solid fa-code"></i>
+              <span>查看與複製前後端代碼</span>
             </a>
           </div>
         </div>
 
-        <!-- 模組 B：註冊組端 -->
-        <div class="bg-gradient-to-br from-slate-50 to-blue-50/40 rounded-3xl p-7 border border-blue-100/80 shadow-xs relative overflow-hidden flex flex-col justify-between">
-          <div class="absolute top-0 right-0 w-32 h-32 bg-zgjhBlue-600 text-white flex items-center justify-center text-2xl shadow-md">
-            <i class="fa-solid fa-scale-balanced"></i>
-          </div>
-          <div>
-            <div class="flex items-center space-x-3 mb-5">
-              <div class="w-12 h-12 rounded-2xl bg-zgjhBlue-600 text-white flex items-center justify-center text-2xl shadow-md">
-                <i class="fa-solid fa-scale-balanced"></i>
+        <!-- 右側手機模型預覽 -->
+        <div class="lg:col-span-5 flex justify-center">
+          <div class="relative w-full max-w-[340px]">
+            <div class="relative bg-slate-950 rounded-[44px] p-3 border-4 border-slate-800 phone-mockup-shadow">
+              <div class="absolute top-0 left-1/2 -translate-x-1/2 w-36 h-5 bg-slate-800 rounded-b-2xl z-30 flex items-center justify-center">
+                <div class="w-12 h-1 bg-slate-700 rounded-full"></div>
               </div>
-              <div>
-                <span class="text-xs font-bold text-zgjhBlue-600 tracking-wide">模組 B · 註冊組端</span>
-                <h3 class="text-lg font-bold text-slate-900">法規審核與行政處置指引</h3>
+
+              <!-- 手機螢幕內部 -->
+              <div class="bg-[#8C9DAE] rounded-[36px] overflow-hidden flex flex-col h-[520px] text-xs">
+                <div class="bg-[#243443] text-white px-4 pt-7 pb-3 flex items-center justify-between shrink-0 shadow-md">
+                  <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-chevron-left text-xs opacity-70"></i>
+                    <span class="font-bold text-sm">竹光115總量管制小幫手</span>
+                    <span class="w-2 h-2 rounded-full bg-[#06C755]"></span>
+                  </div>
+                  <div class="flex items-center space-x-3 text-slate-300">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <i class="fa-solid fa-bars"></i>
+                  </div>
+                </div>
+
+                <!-- 模擬對話內容 -->
+                <div class="flex-1 p-3 space-y-3 overflow-y-auto custom-scrollbar">
+                  <div class="text-center my-1">
+                    <span class="bg-black/20 text-white/90 text-[10px] px-2.5 py-0.5 rounded-full">上午 09:30</span>
+                  </div>
+
+                  <div class="flex items-start space-x-2">
+                    <div class="w-7 h-7 rounded-full bg-[#06C755] text-white flex items-center justify-center text-xs shrink-0 mt-0.5 shadow-xs font-bold">
+                      <i class="fa-brands fa-line"></i>
+                    </div>
+                    <div class="max-w-[80%]">
+                      <div class="chat-bubble-received p-2.5 text-slate-800 text-[11px] leading-relaxed">
+                        家長您好！我是竹光國中 115學年度新生總量管制諮詢小幫手 🎓<br><br>
+                        請直接輸入您的疑慮（例如：「租約未公證算第幾順位？」或「設籍大約幾年能排到？」），我將即時為您查核法規！
+                      </div>
+                      <span class="text-[9px] text-white/70 ml-1 mt-0.5 block">09:30</span>
+                    </div>
+                  </div>
+
+                  <div class="flex items-end justify-end space-x-1">
+                    <span class="text-[9px] text-white/70 mb-1">已讀</span>
+                    <div class="max-w-[80%] chat-bubble-sent p-2.5 text-slate-900 text-[11px] leading-relaxed">
+                      老師好，我們是租房子只有一般租約沒公證，能登記嗎？排在第幾順位？
+                    </div>
+                  </div>
+
+                  <div class="flex items-start space-x-2">
+                    <div class="w-7 h-7 rounded-full bg-[#06C755] text-white flex items-center justify-center text-xs shrink-0 mt-0.5 shadow-xs font-bold">
+                      <i class="fa-brands fa-line"></i>
+                    </div>
+                    <div class="max-w-[85%]">
+                      <div class="chat-bubble-received p-2.5 text-slate-800 text-[11px] leading-relaxed space-y-1">
+                        <div class="font-bold text-emerald-800 border-b border-emerald-100 pb-1">
+                          📋 判定結果：第四順位
+                        </div>
+                        <p>依竹光 115 作業規定：</p>
+                        <p>• 設籍學區之國小畢業生且與直系親屬同戶</p>
+                        <p>• 僅提供「未經法院公證之房屋租賃契約」並簽具家訪同意書</p>
+                        <p class="text-amber-800 font-semibold">➔ 列為【第四順位】！</p>
+                        <p class="text-slate-500 text-[10px]">💡 提示：若能在 3/14 登記前至法院補辦租約公證，即可升級為【第二順位】喔！</p>
+                      </div>
+                      <span class="text-[9px] text-white/70 ml-1 mt-0.5 block">09:31</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 手機底部輸入列 -->
+                <div class="bg-[#F6F6F6] px-3 py-2 flex items-center space-x-2 border-t border-slate-300 shrink-0">
+                  <i class="fa-solid fa-plus text-slate-500 text-sm"></i>
+                  <i class="fa-solid fa-camera text-slate-500 text-sm"></i>
+                  <div class="flex-1 bg-white rounded-full px-3 py-1.5 text-slate-400 text-[11px] border border-slate-200">
+                    輸入「#記住」或問題...
+                  </div>
+                  <i class="fa-solid fa-paper-plane text-emerald-600 text-sm"></i>
+                </div>
               </div>
             </div>
-            
-            <p class="text-slate-600 text-xs sm:text-sm leading-relaxed mb-6">
-              行政同仁的隨身法規法典！遇到爭議戶籍、同日遷入抽籤、雙胞胎外加、中途遷出設籍累計中斷等疑難雜症，一鍵查詢法規條文與標準處置流程。
-            </p>
-
-            <div class="space-y-3 mb-6">
-              <div class="flex items-start space-x-3 p-3 rounded-xl bg-white border border-slate-200/80 shadow-2xs">
-                <i class="fa-solid fa-house-chimney-user text-zgjhBlue-600 text-base mt-0.5"></i>
-                <div class="text-xs">
-                  <span class="font-bold text-slate-800">居住事實查核與家訪 SOP</span>
-                  <p class="text-slate-500 mt-0.5">一戶多生、非親屬同戶、未簽家訪同意書之空戶判定與轉入輔導指引。</p>
-                </div>
-              </div>
-              <div class="flex items-start space-x-3 p-3 rounded-xl bg-white border border-slate-200/80 shadow-2xs">
-                <i class="fa-solid fa-arrows-split-up-and-left text-zgjhBlue-600 text-base mt-0.5"></i>
-                <div class="text-xs">
-                  <span class="font-bold text-slate-800">共同學區與改分發追蹤</span>
-                  <p class="text-slate-500 mt-0.5">北門里、新雅里19鄰雙重總量登記手續，未錄取名冊函送鄰近學校作業。</p>
-                </div>
-              </div>
-              <div class="flex items-start space-x-3 p-3 rounded-xl bg-white border border-slate-200/80 shadow-2xs">
-                <i class="fa-solid fa-dice text-zgjhBlue-600 text-base mt-0.5"></i>
-                <div class="text-xs">
-                  <span class="font-bold text-slate-800">同日設籍抽籤與多胞胎規定</span>
-                  <p class="text-slate-500 mt-0.5">末名同日有兄姊優先，條件相同公開抽籤；多胞胎手足隨同外加名額。</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="pt-4 border-t border-blue-100 flex items-center justify-between text-xs text-blue-800 font-semibold">
-            <span>適用：教務處註冊組同仁、導師、審核小組</span>
-            <a href="#simulator" onclick="switchSimMode('admin')" class="inline-flex items-center hover:underline">
-              <span>立即模擬測試</span>
-              <i class="fa-solid fa-arrow-right ml-1"></i>
-            </a>
           </div>
         </div>
+
       </div>
     </div>
   </section>
 
-  <!-- LINE 對話模擬器區塊 -->
+  <!-- 互動模擬器區塊 (#simulator) -->
   <section id="simulator" class="py-16 sm:py-24 bg-slate-900 text-white relative">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center max-w-3xl mx-auto mb-12">
-        <span class="text-xs font-bold uppercase tracking-wider text-emerald-400 bg-emerald-950/80 border border-emerald-800/80 px-3.5 py-1.5 rounded-full">Interactive AI Simulator</span>
-        <h2 class="text-2xl sm:text-4xl font-black text-white mt-4 tracking-tight">LINE Bot 實時對話模擬器</h2>
-        <p class="text-slate-400 text-xs sm:text-sm mt-2.5">點選左側情境範例，或在手機模擬器中直接打字發送，體驗智慧小幫手如何快速回答新生家長與同仁！</p>
-      </div>
+      
+      <div class="text-center max-w-3xl mx-auto mb-12 space-y-3">
+        <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold border border-emerald-500/30">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+          <span>Live Interactive Simulator</span>
+        </div>
+        <h2 class="text-2xl sm:text-3xl lg:text-4xl font-black">
+          LINE Bot 雙視角對話體驗模擬器
+        </h2>
+        <p class="text-slate-400 text-xs sm:text-sm">
+          點選左側經典題目，或直接在下方輸入關鍵字；支援家長「資格試算」與註冊組「法規查核」雙視角！
+        </p>
 
-      <!-- 模式切換 Tabs -->
-      <div class="flex justify-center mb-8">
-        <div class="inline-flex p-1.5 rounded-2xl bg-slate-800 border border-slate-700 shadow-inner">
-          <button id="simTabParent" onclick="switchSimMode('parent')" class="px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 bg-[#06C755] text-white shadow-md">
+        <!-- 視角切換器 -->
+        <div class="inline-flex p-1.5 rounded-2xl bg-slate-800 border border-slate-700 shadow-inner mt-4">
+          <button 
+            id="simTabParent"
+            onclick="switchSimMode('parent')"
+            class="px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 bg-[#06C755] text-white shadow-md"
+          >
             <i class="fa-solid fa-user-group"></i>
-            <span>家長諮詢模式（順位試算）</span>
+            <span>新生家長諮詢視角</span>
           </button>
-          <button id="simTabAdmin" onclick="switchSimMode('admin')" class="px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 text-slate-400 hover:text-white">
+          <button 
+            id="simTabAdmin"
+            onclick="switchSimMode('admin')"
+            class="px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2 text-slate-400 hover:text-white"
+          >
             <i class="fa-solid fa-shield-halved"></i>
-            <span>註冊組審核模式（法規SOP）</span>
+            <span>註冊組法規查核視角</span>
           </button>
         </div>
       </div>
 
-      <!-- 模擬器主區塊 (左右分欄) -->
-      <div class="grid lg:grid-cols-12 gap-8 items-start">
+      <!-- 模擬器主畫面 -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
-        <!-- 左側：情境快捷按鈕 -->
-        <div class="lg:col-span-6 bg-slate-800/80 border border-slate-700/80 rounded-3xl p-6 sm:p-8 backdrop-blur-md">
-          <div class="flex items-center justify-between mb-4">
-            <h3 id="promptTitle" class="text-base font-bold text-white flex items-center">
+        <!-- 左側快捷題目列表 -->
+        <div class="lg:col-span-5 space-y-4">
+          <div class="bg-slate-800/80 backdrop-blur-md rounded-3xl p-5 border border-slate-700/80 shadow-lg">
+            <h3 id="promptTitle" class="text-sm font-bold text-white flex items-center mb-3">
               <i class="fa-solid fa-circle-question text-emerald-400 mr-2"></i>
               點選測試 家長常見諮詢情境：
             </h3>
-            <span class="text-[11px] text-slate-400">點擊立即發送</span>
-          </div>
+            <p id="promptDesc" class="text-[11px] text-slate-400 mb-4">
+              針對新生家長每年最容易焦慮、打爆總機的 4 大核心問題，點擊即時體驗回答：
+            </p>
 
-          <p id="promptDesc" class="text-xs text-slate-400 mb-6 leading-relaxed">
-            針對 115 學年度竹光國中新生入學最常見的 8 大痛點問題，點選任一項體驗小幫手的解答精準度：
-          </p>
-
-          <!-- 按鈕容器 -->
-          <div id="promptButtonsContainer" class="space-y-3">
-            <!-- 由 JS 動態生成 -->
-          </div>
-
-          <!-- 常見快問快答關鍵字標籤 -->
-          <div class="mt-8 pt-6 border-t border-slate-700/80">
-            <div class="text-xs font-bold text-slate-300 mb-3 flex items-center">
-              <i class="fa-solid fa-tags text-slate-400 mr-2"></i>
-              亦可在手機對話框直接輸入下列關鍵字：
+            <div id="promptButtonsContainer" class="space-y-2.5">
+              <!-- JS 動態渲染題庫按鈕 -->
             </div>
-            <div class="flex flex-wrap gap-2">
-              <button onclick="triggerCustomKeyword('順位')" class="px-2.5 py-1 rounded-lg bg-slate-700/80 hover:bg-emerald-600/30 hover:border-emerald-400/50 border border-slate-600 text-[11px] text-slate-200 transition">順位一覽</button>
-              <button onclick="triggerCustomKeyword('租約未公證')" class="px-2.5 py-1 rounded-lg bg-slate-700/80 hover:bg-emerald-600/30 hover:border-emerald-400/50 border border-slate-600 text-[11px] text-slate-200 transition">租約未公證</button>
-              <button onclick="triggerCustomKeyword('設籍多久錄取')" class="px-2.5 py-1 rounded-lg bg-slate-700/80 hover:bg-emerald-600/30 hover:border-emerald-400/50 border border-slate-600 text-[11px] text-slate-200 transition">設籍幾年錄取</button>
-              <button onclick="triggerCustomKeyword('3/14要帶什麼')" class="px-2.5 py-1 rounded-lg bg-slate-700/80 hover:bg-emerald-600/30 hover:border-emerald-400/50 border border-slate-600 text-[11px] text-slate-200 transition">3/14帶什麼文件</button>
-              <button onclick="triggerCustomKeyword('北門里學區')" class="px-2.5 py-1 rounded-lg bg-slate-700/80 hover:bg-emerald-600/30 hover:border-emerald-400/50 border border-slate-600 text-[11px] text-slate-200 transition">北門里學區</button>
-              <button onclick="triggerCustomKeyword('沒錄取去哪裡')" class="px-2.5 py-1 rounded-lg bg-slate-700/80 hover:bg-emerald-600/30 hover:border-emerald-400/50 border border-slate-600 text-[11px] text-slate-200 transition">改分發學校</button>
-              <button onclick="triggerCustomKeyword('線上報到日期')" class="px-2.5 py-1 rounded-lg bg-slate-700/80 hover:bg-emerald-600/30 hover:border-emerald-400/50 border border-slate-600 text-[11px] text-slate-200 transition">重要時程</button>
-              <button onclick="triggerCustomKeyword('#記住 雙胞胎同班申請 3/14登記時於黃單背面勾選即可')" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 border border-emerald-400 text-[11px] text-white font-bold transition flex items-center"><i class="fa-solid fa-plus-circle mr-1"></i>#記住 新增內容</button>
-              <button onclick="triggerCustomKeyword('#提問 請問繼承過戶中算自有嗎')" class="px-2.5 py-1 rounded-lg bg-emerald-700/70 hover:bg-emerald-600 border border-emerald-500 text-[11px] text-white transition">在線登記提問</button>
+
+            <!-- 熱門關鍵字標籤 -->
+            <div class="pt-5 mt-4 border-t border-slate-700/70">
+              <div class="text-[11px] font-bold text-slate-400 mb-2">快速點選關鍵字：</div>
+              <div class="flex flex-wrap gap-1.5">
+                <button onclick="triggerCustomKeyword('未公證租約算第幾順位？')" class="text-[10px] px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-emerald-600 text-slate-300 hover:text-white transition">#未公證租約</button>
+                <button onclick="triggerCustomKeyword('自有房屋權狀需要帶什麼？')" class="text-[10px] px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-emerald-600 text-slate-300 hover:text-white transition">#房屋所有權狀</button>
+                <button onclick="triggerCustomKeyword('設籍大約幾年排得上？')" class="text-[10px] px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-emerald-600 text-slate-300 hover:text-white transition">#歷年設籍門檻</button>
+                <button onclick="triggerCustomKeyword('北門里算竹光學區嗎？')" class="text-[10px] px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-emerald-600 text-slate-300 hover:text-white transition">#115新增北門里</button>
+                <button onclick="triggerCustomKeyword('如果沒錄取會改分發去哪裡？')" class="text-[10px] px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-emerald-600 text-slate-300 hover:text-white transition">#改分發五校</button>
+                <button onclick="triggerCustomKeyword('3/14審核要帶什麼文件？')" class="text-[10px] px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-emerald-600 text-slate-300 hover:text-white transition">#應備文件黃單</button>
+              </div>
+            </div>
+
+            <!-- 動態擴充提示卡 -->
+            <div class="mt-4 p-3.5 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 text-[11px] text-emerald-200 flex items-start space-x-2.5">
+              <i class="fa-solid fa-lightbulb text-emerald-400 mt-0.5 shrink-0"></i>
+              <div>
+                <span class="font-bold text-white">支援 #記住 動態寫入：</span><br>
+                在下方輸入框輸入 <code>#記住 [題目] [答案]</code>（例如：<code>#記住 雙胞胎同班 3/14現場登記時於登記表背面勾選即可</code>），小幫手將直接寫入試算表，下一次直接能回答！
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- 右側：擬真 iPhone 手機模型 -->
-        <div class="lg:col-span-6 flex justify-center">
-          <div class="w-full max-w-[390px] h-[720px] bg-slate-900 rounded-[50px] p-3.5 border-4 border-slate-700 phone-mockup-shadow relative flex flex-col overflow-hidden">
+        <!-- 右側手機對話模擬窗 -->
+        <div class="lg:col-span-7 flex justify-center">
+          <div class="w-full max-w-md bg-slate-950 rounded-[44px] p-3.5 border-4 border-slate-700 shadow-2xl">
             
-            <!-- 聽筒與前置鏡頭 (動態島) -->
-            <div class="absolute top-5 left-1/2 -translate-x-1/2 w-28 h-5 bg-black rounded-full z-30 flex items-center justify-center">
-              <div class="w-2.5 h-2.5 rounded-full bg-slate-900 mr-2"></div>
-              <div class="w-2.5 h-2.5 rounded-full bg-blue-950/40"></div>
-            </div>
-
-            <!-- 手機內部螢幕 -->
-            <div class="w-full h-full bg-[#8CABD8]/30 rounded-[40px] flex flex-col overflow-hidden relative border border-slate-800">
+            <div class="bg-[#8C9DAE] rounded-[34px] overflow-hidden flex flex-col h-[580px] text-xs">
               
-              <!-- LINE 頂部狀態列 -->
-              <div class="pt-3 px-6 pb-2 bg-[#273240] text-white flex justify-between items-center text-[11px] select-none z-20">
-                <span class="font-bold font-mono">09:41</span>
-                <div class="flex items-center space-x-1.5 text-xs">
-                  <i class="fa-solid fa-signal"></i>
-                  <i class="fa-solid fa-wifi"></i>
-                  <i class="fa-solid fa-battery-full text-emerald-400"></i>
-                </div>
-              </div>
-
-              <!-- LINE 聊天室 Header -->
-              <div class="px-4 py-2.5 bg-[#273240] text-white border-b border-white/10 flex items-center justify-between z-20 shadow-xs">
+              <!-- 聊天頂欄 -->
+              <div class="bg-[#243443] text-white px-4 py-3 flex items-center justify-between shrink-0 shadow-md">
                 <div class="flex items-center space-x-2.5">
-                  <i class="fa-solid fa-chevron-left text-slate-300 text-sm"></i>
                   <div id="simAvatar" class="w-8 h-8 rounded-full bg-[#06C755] flex items-center justify-center text-white text-sm shadow-xs font-bold">
                     <i class="fa-brands fa-line"></i>
                   </div>
                   <div>
-                    <div id="simBotName" class="text-xs font-bold tracking-tight">竹光 115 總量管制諮詢助手</div>
-                    <div class="text-[9px] text-emerald-400 flex items-center">
-                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1 animate-pulse"></span>
-                      Google 試算表大腦 即時連線
+                    <div id="simBotName" class="font-bold text-xs">竹光 115 總量管制諮詢助手</div>
+                    <div class="text-[9px] text-emerald-400 flex items-center space-x-1">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                      <span>已即時連線 Google Sheets 資料庫</span>
                     </div>
                   </div>
                 </div>
 
-                <div class="flex items-center space-x-3 text-slate-300 text-sm">
-                  <i class="fa-solid fa-magnifying-glass"></i>
-                  <i class="fa-solid fa-phone"></i>
-                  <i class="fa-solid fa-bars"></i>
+                <div class="flex items-center space-x-2">
+                  <button onclick="resetChatMessages()" title="清空對話" class="text-slate-300 hover:text-white p-1 text-xs">
+                    <i class="fa-solid fa-rotate-right"></i>
+                  </button>
                 </div>
               </div>
 
-              <!-- 聊天內容滾動區 -->
-              <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4 text-xs custom-scrollbar bg-[#849EB9]">
-                <!-- 日期戳記 -->
-                <div class="text-center my-2">
-                  <span class="bg-black/20 backdrop-blur-xs text-white/90 text-[10px] px-3 py-1 rounded-full">
-                    115 年 3 月 14 日 星期六
-                  </span>
-                </div>
-
-                <!-- 機器人歡迎訊息 -->
-                <div class="flex items-start space-x-2">
-                  <div class="w-7 h-7 rounded-full bg-[#06C755] text-white flex items-center justify-center text-xs shrink-0 mt-0.5 shadow-xs font-bold">
-                    <i class="fa-brands fa-line"></i>
-                  </div>
-                  <div class="max-w-[82%]">
-                    <div class="chat-bubble-received p-3 text-slate-800 space-y-2 leading-relaxed text-[11px] shadow-sm">
-                      <p class="font-bold text-slate-900 border-b border-slate-100 pb-1.5">
-                        🏫 家長與同仁您好！我是竹光國中 115學年度總量管制智慧諮詢小幫手。
-                      </p>
-                      <p>
-                        市府核定本校 115 學年招收 <strong>12 班</strong>。知識庫已與 Google 試算表連線，您可詢問：
-                      </p>
-                      <ul class="list-disc pl-4 space-y-1 text-slate-600">
-                        <li>入學順位資格判定（自有/租約公證/未公證）</li>
-                        <li>歷年第四順位設籍錄取年份門檻</li>
-                        <li>3/14 (六) 現場審核登記應帶文件（黃單）</li>
-                        <li>輸入「#提問 [內容]」可直接立案諮詢登記！</li>
-                      </ul>
-                    </div>
-                    <span class="text-[9px] text-white/70 ml-1 mt-0.5 block">09:41</span>
-                  </div>
-                </div>
-
+              <!-- 聊天歷史視窗 -->
+              <div id="chatMessages" class="flex-1 p-3.5 space-y-3 overflow-y-auto custom-scrollbar">
+                <!-- 預設歡迎氣泡 -->
               </div>
 
-              <!-- 打字中提示 (Typing indicator) -->
-              <div id="typingIndicator" class="hidden px-4 py-1.5 bg-[#849EB9]">
-                <div class="flex items-center space-x-1 text-white text-[11px]">
-                  <span class="w-2 h-2 rounded-full bg-white/70 animate-bounce"></span>
-                  <span class="w-2 h-2 rounded-full bg-white/70 animate-bounce [animation-delay:0.2s]"></span>
-                  <span class="w-2 h-2 rounded-full bg-white/70 animate-bounce [animation-delay:0.4s]"></span>
-                  <span class="text-white/80 text-[10px] ml-1">小幫手正在連線試算表知識庫...</span>
-                </div>
+              <!-- 打字中指示器 -->
+              <div id="typingIndicator" class="hidden px-4 py-1.5 flex items-center space-x-1.5 text-white/80 text-[10px]">
+                <div class="w-2 h-2 rounded-full bg-white/70 animate-bounce"></div>
+                <div class="w-2 h-2 rounded-full bg-white/70 animate-bounce" style="animation-delay: 0.2s"></div>
+                <div class="w-2 h-2 rounded-full bg-white/70 animate-bounce" style="animation-delay: 0.4s"></div>
+                <span class="ml-1 text-white/90">小幫手正在查核總量管制法規中...</span>
               </div>
 
-              <!-- 底部輸入列 -->
-              <div class="p-2.5 bg-white border-t border-slate-200 flex items-center space-x-2 z-20">
-                <button class="text-slate-400 hover:text-slate-600 p-1">
-                  <i class="fa-solid fa-circle-plus text-base"></i>
-                </button>
-                <button class="text-slate-400 hover:text-slate-600 p-1">
-                  <i class="fa-solid fa-camera text-base"></i>
-                </button>
-                <input 
-                  type="text" 
-                  id="simInputText" 
-                  placeholder="輸入問題，或打 #記住 [問題] [回答] 新增內容..." 
-                  class="flex-1 bg-slate-100 border border-slate-200 rounded-full px-3.5 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                  onkeydown="if(event.key === 'Enter') handleUserInput()"
-                >
-                <button 
-                  onclick="handleUserInput()" 
-                  class="w-8 h-8 rounded-full bg-[#06C755] hover:bg-[#05B34C] text-white flex items-center justify-center text-xs transition active:scale-95 shadow-xs"
-                >
-                  <i class="fa-solid fa-paper-plane"></i>
-                </button>
+              <!-- 聊天輸入區 -->
+              <div class="bg-[#F6F6F6] p-2.5 border-t border-slate-300 shrink-0">
+                <form onsubmit="event.preventDefault(); handleUserInput();" class="flex items-center space-x-2">
+                  <input 
+                    type="text" 
+                    id="simInputText"
+                    placeholder="輸入問題或以「#記住 題目 答案」新增..."
+                    class="flex-1 bg-white rounded-full px-4 py-2 text-slate-800 text-xs border border-slate-300 focus:outline-hidden focus:border-emerald-500 shadow-inner"
+                  >
+                  <button 
+                    type="submit"
+                    class="w-8 h-8 rounded-full bg-[#06C755] hover:bg-emerald-600 text-white flex items-center justify-center transition shadow-sm active:scale-95 shrink-0"
+                  >
+                    <i class="fa-solid fa-paper-plane text-xs"></i>
+                  </button>
+                </form>
               </div>
 
             </div>
+
           </div>
         </div>
 
       </div>
+
     </div>
   </section>
 
-  <!-- Google 試算表資料庫架構展示區塊 (#database) -->
-  <section id="database" class="py-16 sm:py-24 bg-slate-100 border-b border-slate-200">
+  <!-- 六大順位深度架構解析 (#deepdive) -->
+  <section id="deepdive" class="py-16 sm:py-24 bg-white border-y border-slate-200">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       
-      <div class="text-center max-w-3xl mx-auto mb-16">
-        <span class="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-200/60 px-3.5 py-1.5 rounded-full border border-emerald-300">Google Sheets Database</span>
-        <h2 class="text-2xl sm:text-4xl font-black text-slate-900 mt-3 tracking-tight">Google 試算表雲端知識庫大腦</h2>
-        <p class="text-slate-600 text-xs sm:text-sm mt-2.5">
-          非工程師也能輕鬆維護！採用 Google 試算表作為 LINE Bot 的資料庫，註冊組同仁在試算表修改任何 Q&A，小幫手 1 秒內即刻同步生效。
+      <div class="text-center max-w-3xl mx-auto mb-16 space-y-3">
+        <span class="text-emerald-700 bg-emerald-100 text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">
+          Decision Matrix
+        </span>
+        <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
+          115學年度總量管制「六大順位」判定矩陣
+        </h2>
+        <p class="text-slate-600 text-sm">
+          依據新竹市立竹光國民中學 115學年度新生登記入學作業規定，審查分發順位層次清晰透明：
         </p>
       </div>
 
-      <!-- 7 大工作表全景導覽卡片 -->
-      <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-12">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         
-        <!-- Sheet 1 -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs hover:shadow-md transition">
-          <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg mb-3">
-            <i class="fa-solid fa-comments"></i>
+        <!-- 順位一 -->
+        <div class="rounded-3xl p-6 border-2 border-emerald-500/40 bg-gradient-to-b from-emerald-50/50 to-white shadow-sm hover:shadow-md transition">
+          <div class="flex items-center justify-between mb-4">
+            <span class="px-3 py-1 rounded-xl bg-emerald-600 text-white font-black text-xs">第一順位</span>
+            <span class="text-emerald-700 font-bold text-xs"><i class="fa-solid fa-check-double mr-1"></i>優先保障入學</span>
           </div>
-          <span class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Sheet 1 · 核心大腦</span>
-          <h3 class="text-sm font-bold text-slate-900 mt-0.5 mb-1.5">總量管制Q&A知識庫</h3>
-          <p class="text-xs text-slate-500 leading-relaxed">
-            收納 15+ 組高頻問答、精準觸發關鍵字、完整標準回答與法規依據。隨改隨生效，零快取延遲！
+          <h3 class="text-lg font-bold text-slate-900 mb-2">身心障礙、低收、派外人員子女</h3>
+          <p class="text-xs text-slate-600 leading-relaxed space-y-1 mb-4">
+            • 經竹市特教通報網鑑定安置之身心障礙學生<br>
+            • 設籍學區之低收入戶子女<br>
+            • 派赴公務出國人員子女或政府派外同仁隨行子女
+          </p>
+          <div class="pt-3 border-t border-emerald-100 text-[11px] text-slate-500">
+            <strong>審驗文件：</strong>鑑輔會公文、竹市低收入戶證明、派令證明文件。
+          </div>
+        </div>
+
+        <!-- 順位二 -->
+        <div class="rounded-3xl p-6 border-2 border-blue-500/40 bg-gradient-to-b from-blue-50/50 to-white shadow-sm hover:shadow-md transition">
+          <div class="flex items-center justify-between mb-4">
+            <span class="px-3 py-1 rounded-xl bg-blue-600 text-white font-black text-xs">第二順位</span>
+            <span class="text-blue-700 font-bold text-xs"><i class="fa-solid fa-house-chimney mr-1"></i>竹市國小 + 權狀/公證租約</span>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">本市畢業生且具自有權狀或公證租約</h3>
+          <p class="text-xs text-slate-600 leading-relaxed space-y-1 mb-4">
+            • 學生設籍學區且與直系尊親屬或法定監護人同戶<br>
+            • 具新竹市公私立國小畢業資格<br>
+            • 檢附自有房屋所有權狀（或稅籍證明）或公證租賃契約並簽具家訪同意書
+          </p>
+          <div class="pt-3 border-t border-blue-100 text-[11px] text-slate-500">
+            <strong>排序標準：</strong>符合資格者直接入學；人數超額時比設籍日。
+          </div>
+        </div>
+
+        <!-- 順位三 -->
+        <div class="rounded-3xl p-6 border border-slate-200 bg-white shadow-sm hover:shadow-md transition">
+          <div class="flex items-center justify-between mb-4">
+            <span class="px-3 py-1 rounded-xl bg-slate-800 text-white font-black text-xs">第三順位</span>
+            <span class="text-slate-600 font-bold text-xs"><i class="fa-solid fa-plane-departure mr-1"></i>外縣市國小 + 權狀/公證租約</span>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">外縣市畢業生具自有權狀或公證租約</h3>
+          <p class="text-xs text-slate-600 leading-relaxed space-y-1 mb-4">
+            • 設籍本校學區且與直系親屬同戶<br>
+            • 畢業於外縣市公私立國小<br>
+            • 檢附自有權狀或經法院公證租賃契約證明，簽具家訪同意書
+          </p>
+          <div class="pt-3 border-t border-slate-100 text-[11px] text-slate-500">
+            <strong>排序標準：</strong>第二順位分發後如有餘額，按設籍時間排序分發。
+          </div>
+        </div>
+
+        <!-- 順位四 -->
+        <div class="rounded-3xl p-6 border-2 border-amber-500/40 bg-gradient-to-b from-amber-50/50 to-white shadow-sm hover:shadow-md transition">
+          <div class="flex items-center justify-between mb-4">
+            <span class="px-3 py-1 rounded-xl bg-amber-600 text-white font-black text-xs">第四順位</span>
+            <span class="text-amber-800 font-bold text-xs"><i class="fa-solid fa-file-contract mr-1"></i>最常比設籍之主戰場</span>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">未公證租約 / 居住事實證明者</h3>
+          <p class="text-xs text-slate-600 leading-relaxed space-y-1 mb-4">
+            • 設籍本校學區且直系尊親屬同戶之國小畢業生<br>
+            • 僅檢附「未經法院公證之租賃契約」或其他居住證明文件<br>
+            • 簽具家訪同意書（租約需涵蓋 115/3/14~9/1，承租人為直系尊親屬）
+          </p>
+          <div class="pt-3 border-t border-amber-100 text-[11px] text-slate-500">
+            <strong>排序標準：</strong>依設籍時間早晚排序分發至額滿為止。
+          </div>
+        </div>
+
+        <!-- 順位五 -->
+        <div class="rounded-3xl p-6 border border-slate-200 bg-white shadow-sm hover:shadow-md transition">
+          <div class="flex items-center justify-between mb-4">
+            <span class="px-3 py-1 rounded-xl bg-slate-700 text-white font-black text-xs">第五順位</span>
+            <span class="text-slate-500 font-bold text-xs"><i class="fa-solid fa-school mr-1"></i>教職員工子女</span>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">本校現職編制內教職員工子女</h3>
+          <p class="text-xs text-slate-600 leading-relaxed space-y-1 mb-4">
+            • 竹光國中現職編制內教職員工隨行就讀子女<br>
+            • 保障隨親就讀安心教學權利<br>
+            • 依相關教育人員子女就讀要點辦理
+          </p>
+          <div class="pt-3 border-t border-slate-100 text-[11px] text-slate-500">
+            <strong>審驗要點：</strong>人事室在職員工證明及親屬關係證明。
+          </div>
+        </div>
+
+        <!-- 順位六 -->
+        <div class="rounded-3xl p-6 border border-slate-200 bg-white shadow-sm hover:shadow-md transition">
+          <div class="flex items-center justify-between mb-4">
+            <span class="px-3 py-1 rounded-xl bg-slate-700 text-white font-black text-xs">第六順位</span>
+            <span class="text-slate-500 font-bold text-xs"><i class="fa-solid fa-user-xmark mr-1"></i>非直系寄居/缺文件</span>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">未符合前五順位之設籍學生</h3>
+          <p class="text-xs text-slate-600 leading-relaxed space-y-1 mb-4">
+            • 學生僅寄居學區而未與直系尊親屬同戶者<br>
+            • 無法提出有效居住證明文件者<br>
+            • 或無法配合居住事實查核者
+          </p>
+          <div class="pt-3 border-t border-slate-100 text-[11px] text-slate-500">
+            <strong>處理方式：</strong>輔導改分發至虎林、成德、光華、育賢、建華等國中。
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Google 試算表資料庫架構 (#database) -->
+  <section id="database" class="py-16 sm:py-24 bg-slate-100/70 border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-16 space-y-3">
+        <span class="text-emerald-800 bg-emerald-200/60 text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider">
+          Database Architecture
+        </span>
+        <h2 class="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
+          7 大工作表：Google Sheets 雲端資料庫大腦
+        </h2>
+        <p class="text-slate-600 text-sm">
+          免架設後端資料庫，教務處同仁直接在 Google 試算表日常維護，LINE Bot 透過 Apps Script 零延遲即時讀取！
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+          <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black mb-3">1</div>
+          <h4 class="font-bold text-slate-900 text-sm">總量管制Q&A知識庫</h4>
+          <p class="text-slate-500 text-xs mt-1 leading-relaxed">
+            核心 RAG 問答大腦，含題目、關鍵字群、權威標準回覆、依據條文及啟用開關；支援前端 <code>#記住</code> 即時新增。
           </p>
         </div>
 
-        <!-- Sheet 2 -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs hover:shadow-md transition">
-          <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-lg mb-3">
-            <i class="fa-solid fa-list-ol"></i>
-          </div>
-          <span class="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Sheet 2 · 法規審查</span>
-          <h3 class="text-sm font-bold text-slate-900 mt-0.5 mb-1.5">六大順位判定矩陣</h3>
-          <p class="text-xs text-slate-500 leading-relaxed">
-            第 1 順位至最後順位階層化條文、身分要件、建物所有權狀/房屋稅籍、公證與未公證租賃契約標準。
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+          <div class="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-black mb-3">2</div>
+          <h4 class="font-bold text-slate-900 text-sm">六大順位判定矩陣</h4>
+          <p class="text-slate-500 text-xs mt-1 leading-relaxed">
+            順位代碼、適用身分、戶籍條件、居住證明文件（權狀/公證/未公證）及同順位排序規準。
           </p>
         </div>
 
-        <!-- Sheet 3 -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs hover:shadow-md transition">
-          <div class="w-10 h-10 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center text-lg mb-3">
-            <i class="fa-solid fa-map"></i>
-          </div>
-          <span class="text-[10px] font-bold text-teal-600 uppercase tracking-wider">Sheet 3 · 學區劃分</span>
-          <h3 class="text-sm font-bold text-slate-900 mt-0.5 mb-1.5">學區劃分與改分發學校</h3>
-          <p class="text-xs text-slate-500 leading-relaxed">
-            單一學區（民富、磐石、新雅）與 11 組共同學區學校對照，包含 115 新增北門里共同學區與改分發意願。
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+          <div class="w-9 h-9 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-black mb-3">3</div>
+          <h4 class="font-bold text-slate-900 text-sm">學區劃分與改分發學校</h4>
+          <p class="text-slate-500 text-xs mt-1 leading-relaxed">
+            含民富、磐石、新雅單一學區，及 115 新增之北門里共同學區與虎林、成德、光華等改分發學校清單。
           </p>
         </div>
 
-        <!-- Sheet 4 -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs hover:shadow-md transition">
-          <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg mb-3">
-            <i class="fa-solid fa-calendar-days"></i>
-          </div>
-          <span class="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Sheet 4 · 行程管考</span>
-          <h3 class="text-sm font-bold text-slate-900 mt-0.5 mb-1.5">115學年度重要日程表</h3>
-          <p class="text-xs text-slate-500 leading-relaxed">
-            17 項重大實施進度：說明會、黃單寄發、3/12雙重登記截止、3/14現場審查、放榜、線上報到與測驗。
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+          <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-black mb-3">4</div>
+          <h4 class="font-bold text-slate-900 text-sm">115學年度重要日程表</h4>
+          <p class="text-slate-500 text-xs mt-1 leading-relaxed">
+            3/14 現場資格審查、3/23 放榜、3/30~4/4 線上報到、4/15 備取遞補、5/30 學力測驗之完整時程。
           </p>
         </div>
 
-        <!-- Sheet 5 -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs hover:shadow-md transition">
-          <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center text-lg mb-3">
-            <i class="fa-solid fa-chart-pie"></i>
-          </div>
-          <span class="text-[10px] font-bold text-purple-600 uppercase tracking-wider">Sheet 5 · 大數據</span>
-          <h3 class="text-sm font-bold text-slate-900 mt-0.5 mb-1.5">歷年設籍門檻數據</h3>
-          <p class="text-xs text-slate-500 leading-relaxed">
-            111～114 學年錄取至第四順位之設籍年限與約當就讀年級趨勢，讓家長有客觀數據可循。
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+          <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-black mb-3">5</div>
+          <h4 class="font-bold text-slate-900 text-sm">歷年設籍門檻數據</h4>
+          <p class="text-slate-500 text-xs mt-1 leading-relaxed">
+            收錄 111~114 各學年核定班級數、最低錄取順位、第四順位設籍年限與歷年就讀年級大數據。
           </p>
         </div>
 
-        <!-- Sheet 6 -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs hover:shadow-md transition">
-          <div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center text-lg mb-3">
-            <i class="fa-solid fa-clipboard-question"></i>
-          </div>
-          <span class="text-[10px] font-bold text-rose-600 uppercase tracking-wider">Sheet 6 · 互動工單</span>
-          <h3 class="text-sm font-bold text-slate-900 mt-0.5 mb-1.5">家長在線提問紀錄簿</h3>
-          <p class="text-xs text-slate-500 leading-relaxed">
-            支援家長在 LINE 輸入「#提問 [內容]」，系統自動產生諮詢單號並即時寫入試算表，方便同仁查覆！
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+          <div class="w-9 h-9 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center font-black mb-3">6</div>
+          <h4 class="font-bold text-slate-900 text-sm">家長在線提問紀錄簿</h4>
+          <p class="text-slate-500 text-xs mt-1 leading-relaxed">
+            自動收集家長以 <code>#提問</code> 送出之諮詢工單、諮詢單號、提問時間、LINE 辨識碼與承辦人處理狀態。
           </p>
         </div>
 
-        <!-- Sheet 7 -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs hover:shadow-md transition">
-          <div class="w-10 h-10 rounded-xl bg-slate-200 text-slate-800 flex items-center justify-center text-lg mb-3">
-            <i class="fa-solid fa-brain"></i>
-          </div>
-          <span class="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Sheet 7 · 自進化庫</span>
-          <h3 class="text-sm font-bold text-slate-900 mt-0.5 mb-1.5">待補充問題庫</h3>
-          <p class="text-xs text-slate-500 leading-relaxed">
-            當家長詢問極為特殊的個別案例時，AI 會自動記錄原句提問，讓註冊組掌握家長盲點並擴充題庫。
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+          <div class="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-black mb-3">7</div>
+          <h4 class="font-bold text-slate-900 text-sm">待補充問題庫</h4>
+          <p class="text-slate-500 text-xs mt-1 leading-relaxed">
+            自動記錄機器人無法判別之問題或高頻率諮詢原句，提供註冊組作為每週擴充知識庫依據。
           </p>
         </div>
 
-        <!-- 檔案連結卡片 -->
-        <div class="bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-2xl p-5 shadow-md flex flex-col justify-between">
+        <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-5 rounded-2xl shadow-md flex flex-col justify-between">
           <div>
-            <div class="w-10 h-10 rounded-xl bg-white/20 text-white flex items-center justify-center text-lg mb-3">
-              <i class="fa-solid fa-file-excel"></i>
-            </div>
-            <span class="text-[10px] font-bold text-emerald-200 uppercase tracking-wider">Google Drive 連線</span>
-            <h3 class="text-sm font-bold text-white mt-0.5 mb-1.5">竹光國中知識庫.xlsx</h3>
-            <p class="text-xs text-emerald-100 leading-relaxed">
-              已生成標準 Excel 檔案至雲端硬碟目錄，可直接以 Google 試算表開啟並綁定！
+            <div class="text-xs font-bold text-emerald-400 mb-1">本機 Excel 實體檔案</div>
+            <h4 class="font-bold text-white text-sm">已生成 XLSX 格式</h4>
+            <p class="text-slate-300 text-xs mt-1">
+              已同步存放至雲端硬碟「總量管制相關資料」與專案根目錄，可直接上傳建立 Google 試算表。
             </p>
           </div>
-          <div class="mt-4 pt-3 border-t border-white/20 text-[11px] font-semibold text-emerald-100 flex items-center">
-            <i class="fa-solid fa-check-circle mr-1.5"></i>
-            <span>已同步至資訊組雲端硬碟</span>
+          <div class="pt-3 text-[10px] text-slate-400 flex items-center space-x-1">
+            <i class="fa-solid fa-file-excel text-emerald-400"></i>
+            <span>竹光國中115學年度總量管制知識庫.xlsx</span>
           </div>
         </div>
 
-      </div>
-
-      <!-- 快速在 Google Sheets 初始化教學 -->
-      <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs">
-        <div class="flex items-center space-x-3 mb-4">
-          <div class="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold">
-            <i class="fa-solid fa-wand-magic-sparkles"></i>
-          </div>
-          <h3 class="text-base sm:text-lg font-bold text-slate-900">如何將此資料庫一秒套用到您的 Google 試算表？</h3>
-        </div>
-        <ol class="text-xs sm:text-sm text-slate-600 space-y-2.5 list-decimal pl-5 leading-relaxed">
-          <li>前往 <a href="https://sheets.new" target="_blank" class="text-emerald-600 font-bold underline">sheets.new</a> 建立一份空白 Google 試算表，命名為「<strong>竹光國中115總量管制知識庫</strong>」。</li>
-          <li>點選上方選單 **「擴充功能」>「Apps Script」**，清空原有內容，貼入下方的 <code>Code.gs</code> 原始碼。</li>
-          <li>在 Apps Script 上方函式選單選擇 <code>initQuotaKnowledgeBaseSheet</code>，點擊 **「執行 (Run)」**。</li>
-          <li>切回試算表，您會看到 <strong>7 大工作表、完整 Q&A 題庫、順位矩陣與排版樣式全部自動灌入完成</strong>！</li>
-        </ol>
       </div>
 
     </div>
   </section>
 
-  <!-- 六大順位法規架構與重要時程 (#deepdive) -->
-  <section id="deepdive" class="py-16 sm:py-24 bg-white border-b border-slate-200">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      
-      <div class="text-center max-w-3xl mx-auto mb-16">
-        <span class="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-3.5 py-1.5 rounded-full border border-blue-200">Regulatory Framework</span>
-        <h2 class="text-2xl sm:text-4xl font-black text-slate-900 mt-3 tracking-tight">115 學年度總量管制核心作業規範</h2>
-        <p class="text-slate-600 text-xs sm:text-sm mt-2.5">依據新竹市政府核定之「班級總量限制學校學生入學實施要點」與竹光國中 115 作業規定完整梳理</p>
-      </div>
-
-      <!-- 六大錄取順位階層卡片 -->
-      <div class="mb-16">
-        <div class="flex items-center space-x-2 mb-6">
-          <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black">
-            <i class="fa-solid fa-arrow-down-short-wide"></i>
-          </div>
-          <h3 class="text-xl font-bold text-slate-900">新生錄取六大順位階層決策矩陣</h3>
-          <span class="text-xs text-slate-500 font-normal">（原則：先比順位，同順位再以戶籍遷入學區時間先後排序）</span>
-        </div>
-
-        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          <!-- 順位 1 -->
-          <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-emerald-300 transition hover:shadow-md flex flex-col justify-between">
-            <div>
-              <div class="flex items-center justify-between mb-3">
-                <span class="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-black text-xs">第一順位</span>
-                <span class="text-[11px] text-slate-500 font-medium">特種身分 / 安置優先</span>
-              </div>
-              <h4 class="font-bold text-slate-900 text-sm mb-2">法定保障與特殊個案</h4>
-              <ul class="text-xs text-slate-600 space-y-1.5 list-disc pl-4">
-                <li>市府轉介少年保護個案</li>
-                <li>設籍本市且列冊之低收入戶子女</li>
-                <li>設籍本市且父母雙亡學童</li>
-                <li>本校現職編制內教職員工隨同子女</li>
-                <li>市府鑑定安置之身心障礙資源生</li>
-              </ul>
-            </div>
-            <div class="mt-4 pt-3 border-t border-slate-200 text-[11px] text-slate-500">
-              ⚠️ 除教職員子女外，均須實地查訪居住事實。
-            </div>
-          </div>
-
-          <!-- 順位 2 -->
-          <div class="p-5 rounded-2xl bg-emerald-50/50 border border-emerald-200 hover:border-emerald-400 transition hover:shadow-md flex flex-col justify-between">
-            <div>
-              <div class="flex items-center justify-between mb-3">
-                <span class="px-2.5 py-1 rounded-lg bg-emerald-500 text-white font-black text-xs">第二順位</span>
-                <span class="text-[11px] text-emerald-800 font-medium">本市國小 ＋ 完整證明</span>
-              </div>
-              <h4 class="font-bold text-slate-900 text-sm mb-2">本市畢業生 × 自有權狀 / 公證租約</h4>
-              <ul class="text-xs text-slate-600 space-y-1.5 list-disc pl-4">
-                <li>新竹市轄內國小應屆畢業生（如民富國小）</li>
-                <li>戶籍符合（至少一名直系尊親屬同戶）</li>
-                <li>自有房屋：房屋所有權狀 或 115房屋稅籍證明</li>
-                <li>租屋：<strong>法院公證之房屋租賃契約</strong>（涵蓋 115/3/14 至 9/1 開學日）</li>
-                <li>簽具家訪同意書</li>
-              </ul>
-            </div>
-            <div class="mt-4 pt-3 border-t border-emerald-200 text-[11px] text-emerald-700 font-semibold">
-              ⭐ 權狀或租約承租人須為直系尊親屬或監護人。
-            </div>
-          </div>
-
-          <!-- 順位 3 -->
-          <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-blue-300 transition hover:shadow-md flex flex-col justify-between">
-            <div>
-              <div class="flex items-center justify-between mb-3">
-                <span class="px-2.5 py-1 rounded-lg bg-blue-600 text-white font-black text-xs">第三順位</span>
-                <span class="text-[11px] text-slate-500 font-medium">外縣市國小 ＋ 完整證明</span>
-              </div>
-              <h4 class="font-bold text-slate-900 text-sm mb-2">外縣市畢業生 × 自有權狀 / 公證租約</h4>
-              <ul class="text-xs text-slate-600 space-y-1.5 list-disc pl-4">
-                <li>非本市（外縣市）國小畢業生（如竹北、頭份等）</li>
-                <li>戶籍符合（直系尊親屬同戶）</li>
-                <li>檢附自有權狀、稅籍證明或法院公證租約</li>
-                <li>簽具家訪同意書</li>
-              </ul>
-            </div>
-            <div class="mt-4 pt-3 border-t border-slate-200 text-[11px] text-slate-500">
-              📌 外縣市國小畢業生若回竹光就讀屬第三順位。
-            </div>
-          </div>
-
-          <!-- 順位 4 -->
-          <div class="p-5 rounded-2xl bg-amber-50/50 border border-amber-200 hover:border-amber-400 transition hover:shadow-md flex flex-col justify-between">
-            <div>
-              <div class="flex items-center justify-between mb-3">
-                <span class="px-2.5 py-1 rounded-lg bg-amber-500 text-white font-black text-xs">第四順位</span>
-                <span class="text-[11px] text-amber-800 font-medium">未公證租約重要類別</span>
-              </div>
-              <h4 class="font-bold text-slate-900 text-sm mb-2">本學區畢業生 ×「未公證租賃契約」</h4>
-              <ul class="text-xs text-slate-600 space-y-1.5 list-disc pl-4">
-                <li>設籍本學區之國民小學畢業生</li>
-                <li>戶籍符合（直系尊親屬同戶）</li>
-                <li>僅提供<strong>「未經法院公證之租賃契約」</strong></li>
-                <li>租期須涵蓋 115/3/14 至 115/9/1 開學日</li>
-                <li>簽具家訪同意書</li>
-              </ul>
-            </div>
-            <div class="mt-4 pt-3 border-t border-amber-200 text-[11px] text-amber-800 font-semibold">
-              💡 租賃契約承租人須為學生直系尊親屬。
-            </div>
-          </div>
-
-          <!-- 順位 5 -->
-          <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-slate-400 transition hover:shadow-md flex flex-col justify-between">
-            <div>
-              <div class="flex items-center justify-between mb-3">
-                <span class="px-2.5 py-1 rounded-lg bg-slate-600 text-white font-black text-xs">第五順位</span>
-                <span class="text-[11px] text-slate-500 font-medium">無居住證明文件</span>
-              </div>
-              <h4 class="font-bold text-slate-900 text-sm mb-2">戶籍符合但無法提供居住文件</h4>
-              <ul class="text-xs text-slate-600 space-y-1.5 list-disc pl-4">
-                <li>設籍本學區之國民小學畢業生</li>
-                <li>戶籍符合（直系尊親屬同戶）</li>
-                <li>無法提供任何房屋權狀或租賃契約（或不符規定）</li>
-                <li>簽具家訪同意書</li>
-              </ul>
-            </div>
-            <div class="mt-4 pt-3 border-t border-slate-200 text-[11px] text-slate-500">
-              📌 雖無證明，只要戶籍符合仍可排第五順位。
-            </div>
-          </div>
-
-          <!-- 順位 6 (最後順位) -->
-          <div class="p-5 rounded-2xl bg-red-50/50 border border-red-200 hover:border-red-400 transition hover:shadow-md flex flex-col justify-between">
-            <div>
-              <div class="flex items-center justify-between mb-3">
-                <span class="px-2.5 py-1 rounded-lg bg-red-600 text-white font-black text-xs">最後順位</span>
-                <span class="text-[11px] text-red-700 font-medium">未簽家訪 / 空戶</span>
-              </div>
-              <h4 class="font-bold text-slate-900 text-sm mb-2">無法簽具家訪同意書或空戶</h4>
-              <ul class="text-xs text-slate-600 space-y-1.5 list-disc pl-4">
-                <li>符合入學資格，但<strong>無法簽具家訪同意書</strong></li>
-                <li>經訪查發現非實際居住、已遷居學區外或空戶</li>
-                <li>將列為第六順位並輔導勒令轉入實際居住學區</li>
-              </ul>
-            </div>
-            <div class="mt-4 pt-3 border-t border-red-200 text-[11px] text-red-700">
-              ⚠️ 若戶籍無直系尊親屬同戶，則連順位都沒有。
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 歷年第四順位設籍門檻分析 -->
-      <div class="mb-16 bg-gradient-to-r from-emerald-900 to-slate-900 rounded-3xl p-6 sm:p-8 text-white">
-        <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
-          <div>
-            <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Historical Trend</span>
-            <h3 class="text-xl font-bold text-white mt-1">歷年第四順位設籍錄取門檻大數據</h3>
-            <p class="text-xs text-slate-300 mt-1">許多家長最關心的「設籍幾年才排得上？」官方歷年錄取最後一名參考：</p>
-          </div>
-          <span class="mt-3 md:mt-0 text-[11px] bg-white/10 px-3 py-1 rounded-full border border-white/20 text-slate-300">
-            僅供參考 · 每年依實際登記人數浮動
-          </span>
-        </div>
-
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div class="bg-white/10 rounded-2xl p-4 border border-white/10 text-center">
-            <div class="text-xs text-slate-300">111 學年度</div>
-            <div class="text-2xl font-black text-emerald-400 my-1">設籍 5 年</div>
-            <div class="text-[11px] text-slate-400">約國小二年級設籍</div>
-          </div>
-          <div class="bg-white/10 rounded-2xl p-4 border border-white/10 text-center">
-            <div class="text-xs text-slate-300">112 學年度</div>
-            <div class="text-2xl font-black text-teal-300 my-1">設籍 4 年</div>
-            <div class="text-[11px] text-slate-400">約國小三年級設籍</div>
-          </div>
-          <div class="bg-white/10 rounded-2xl p-4 border border-white/10 text-center">
-            <div class="text-xs text-slate-300">113 學年度</div>
-            <div class="text-2xl font-black text-amber-400 my-1">設籍 8 年</div>
-            <div class="text-[11px] text-slate-400">約幼兒園大班設籍</div>
-          </div>
-          <div class="bg-white/10 rounded-2xl p-4 border border-white/10 text-center">
-            <div class="text-xs text-slate-300">114 學年度</div>
-            <div class="text-2xl font-black text-blue-400 my-1">設籍 2 年</div>
-            <div class="text-[11px] text-slate-400">約國小五年級設籍</div>
-          </div>
-        </div>
-
-        <div class="mt-6 text-xs text-slate-300 bg-white/5 p-4 rounded-xl border border-white/10 leading-relaxed">
-          <i class="fa-solid fa-circle-info text-emerald-400 mr-1.5"></i>
-          <strong>設籍時間累計關鍵規則</strong>：在竹光學區內搬家（例如從境福里遷到磐石里），設籍時間<strong>「可以累計」</strong>！但如果中途曾經遷出竹光學區（例如遷到金雅里），再遷回本學區，則<strong>「以最後一次遷入學區之日期重新起算」</strong>。
-        </div>
-      </div>
-
-      <!-- 學區劃分與改分發學校對照表 -->
-      <div class="mb-16">
-        <div class="flex items-center space-x-2 mb-6">
-          <div class="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-black">
-            <i class="fa-solid fa-map-location-dot"></i>
-          </div>
-          <h3 class="text-xl font-bold text-slate-900">學區劃分與改分發學校完整對照表</h3>
-        </div>
-
-        <div class="overflow-x-auto rounded-2xl border border-slate-200 shadow-2xs">
-          <table class="w-full text-left text-xs text-slate-600">
-            <thead class="bg-slate-100 text-slate-800 font-bold border-b border-slate-200">
-              <tr>
-                <th class="p-3.5">學區類型</th>
-                <th class="p-3.5">里鄰範圍</th>
-                <th class="p-3.5">共同學區學校</th>
-                <th class="p-3.5">未獲錄取之改分發學校</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-200 bg-white">
-              <tr class="hover:bg-slate-50/80">
-                <td class="p-3.5 font-bold text-emerald-700 bg-emerald-50/50">單一學區</td>
-                <td class="p-3.5 font-semibold text-slate-800">民富里、磐石里、新雅里 1-18 及 20-27 鄰</td>
-                <td class="p-3.5 text-slate-400">無（竹光單一學區）</td>
-                <td class="p-3.5">依家長意願改分發：<strong>虎林、成德、光華、育賢、建華國中</strong></td>
-              </tr>
-              <tr class="hover:bg-slate-50/80">
-                <td class="p-3.5 font-bold text-blue-700 bg-blue-50/50">共同學區</td>
-                <td class="p-3.5">北門里 1-5、7-10、12、13、16、17 鄰 <span class="text-red-500 font-bold text-[10px] ml-1">115新增</span></td>
-                <td class="p-3.5">竹光、光華、建華</td>
-                <td class="p-3.5">依家長意願改分發至光華或建華國中</td>
-              </tr>
-              <tr class="hover:bg-slate-50/80">
-                <td class="p-3.5 font-bold text-blue-700 bg-blue-50/50">共同學區</td>
-                <td class="p-3.5">新雅里 19 鄰</td>
-                <td class="p-3.5">竹光、虎林</td>
-                <td class="p-3.5">改分發至虎林國中</td>
-              </tr>
-              <tr class="hover:bg-slate-50/80">
-                <td class="p-3.5 font-bold text-blue-700 bg-blue-50/50">共同學區</td>
-                <td class="p-3.5">南勢里 1-6、8-9、10 鄰</td>
-                <td class="p-3.5">竹光、虎林、成德</td>
-                <td class="p-3.5">依家長意願改分發至虎林或成德高中(國中部)</td>
-              </tr>
-              <tr class="hover:bg-slate-50/80">
-                <td class="p-3.5 font-bold text-blue-700 bg-blue-50/50">共同學區</td>
-                <td class="p-3.5">客雅里 1-2 鄰 (竹光/成德) · 3-7 鄰 (竹光/虎林/成德)</td>
-                <td class="p-3.5">竹光、成德、虎林</td>
-                <td class="p-3.5">改分發至成德高中(國中部) 或 虎林國中</td>
-              </tr>
-              <tr class="hover:bg-slate-50/80">
-                <td class="p-3.5 font-bold text-blue-700 bg-blue-50/50">共同學區</td>
-                <td class="p-3.5">境福里</td>
-                <td class="p-3.5">竹光、光華</td>
-                <td class="p-3.5">改分發至光華國中</td>
-              </tr>
-              <tr class="hover:bg-slate-50/80">
-                <td class="p-3.5 font-bold text-blue-700 bg-blue-50/50">共同學區</td>
-                <td class="p-3.5">文雅里</td>
-                <td class="p-3.5">竹光、成德、光華</td>
-                <td class="p-3.5">改分發至成德或光華國中</td>
-              </tr>
-              <tr class="hover:bg-slate-50/80">
-                <td class="p-3.5 font-bold text-blue-700 bg-blue-50/50">共同學區</td>
-                <td class="p-3.5">長和里、新民里</td>
-                <td class="p-3.5">竹光、育賢、光華</td>
-                <td class="p-3.5">改分發至育賢或光華國中</td>
-              </tr>
-              <tr class="hover:bg-slate-50/80">
-                <td class="p-3.5 font-bold text-blue-700 bg-blue-50/50">共同學區</td>
-                <td class="p-3.5">中雅里 1-11 鄰 (成德) · 12-16 鄰 (虎林/成德)</td>
-                <td class="p-3.5">竹光、成德、虎林</td>
-                <td class="p-3.5">改分發至成德或虎林國中</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <p class="text-[11px] text-slate-500 mt-2">
-          * 共同學區與單一學區之排序順位標準完全一致。若共同學區包含另一所總量管制國中且家長欲兩所皆登記，務必於 <strong>3/12 (四) 前</strong> 自行向另一校提出申請。
-        </p>
-      </div>
-
-      <!-- 重要時程時間軸 Timeline -->
-      <div>
-        <div class="flex items-center space-x-2 mb-6">
-          <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-black">
-            <i class="fa-solid fa-calendar-check"></i>
-          </div>
-          <h3 class="text-xl font-bold text-slate-900">115 學年度新生入學全流程時間軸</h3>
-        </div>
-
-        <div class="relative border-l-2 border-slate-200 ml-4 pl-6 space-y-6">
-          <!-- Step 1 -->
-          <div class="relative">
-            <span class="absolute -left-[31px] top-1.5 w-4 h-4 rounded-full bg-slate-400 border-2 border-white"></span>
-            <div class="text-xs font-bold text-slate-500">115.02.26 (四)</div>
-            <div class="text-sm font-bold text-slate-800 mt-0.5">辦理新生入學作業說明會</div>
-            <p class="text-xs text-slate-500 mt-0.5">向各國小與家長宣導總量管制辦法；國小端確認學生就讀狀況。</p>
-          </div>
-
-          <!-- Step 2 -->
-          <div class="relative">
-            <span class="absolute -left-[31px] top-1.5 w-4 h-4 rounded-full bg-slate-400 border-2 border-white"></span>
-            <div class="text-xs font-bold text-slate-500">115.03.06 (五) 前</div>
-            <div class="text-sm font-bold text-slate-800 mt-0.5">各國小轉發新生入學資格通知單（黃單）</div>
-            <p class="text-xs text-slate-500 mt-0.5">黃單正面為入學資格通知與作業規定，背面為入學登記表及家訪同意書。</p>
-          </div>
-
-          <!-- Step 3 (重要) -->
-          <div class="relative">
-            <span class="absolute -left-[31px] top-1.5 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white animate-ping"></span>
-            <span class="absolute -left-[31px] top-1.5 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white"></span>
-            <div class="text-xs font-bold text-emerald-600">115.03.14 (六) 08:00 - 11:00 ⭐ 重要關鍵</div>
-            <div class="text-sm font-bold text-slate-900 mt-0.5">新生入學現場登記與資格審核（竹光國中）</div>
-            <p class="text-xs text-slate-600 mt-0.5">請備妥黃單、全戶戶籍謄本或詳細記事戶口名簿、房屋權狀或租賃契約。未登記者視同放棄！</p>
-          </div>
-
-          <!-- Step 4 -->
-          <div class="relative">
-            <span class="absolute -left-[31px] top-1.5 w-4 h-4 rounded-full bg-blue-500 border-2 border-white"></span>
-            <div class="text-xs font-bold text-blue-600">115.03.23 (一) 16:00</div>
-            <div class="text-sm font-bold text-slate-900 mt-0.5">公告新生錄取結果（學校首頁及警衛室張貼）</div>
-            <p class="text-xs text-slate-500 mt-0.5">公布錄取名冊、候補名冊（註記順位）與未錄取名冊。</p>
-          </div>
-
-          <!-- Step 5 -->
-          <div class="relative">
-            <span class="absolute -left-[31px] top-1.5 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white"></span>
-            <div class="text-xs font-bold text-emerald-600">115.03.30 (一) - 04.04 (六)</div>
-            <div class="text-sm font-bold text-slate-900 mt-0.5">正取生線上報到（4/7 - 4/8 警衛室實體報到）</div>
-            <p class="text-xs text-slate-500 mt-0.5">正取生請利用線上報到系統完成報到，逾期視同放棄入學資格。</p>
-          </div>
-
-          <!-- Step 6 -->
-          <div class="relative">
-            <span class="absolute -left-[31px] top-1.5 w-4 h-4 rounded-full bg-slate-400 border-2 border-white"></span>
-            <div class="text-xs font-bold text-slate-500">115.04.15 (三) 前</div>
-            <div class="text-sm font-bold text-slate-800 mt-0.5">辦理未報到缺額之候補報到作業</div>
-            <p class="text-xs text-slate-500 mt-0.5">依候補序位電話逐一通知備取生辦理遞補報到。</p>
-          </div>
-
-          <!-- Step 7 -->
-          <div class="relative">
-            <span class="absolute -left-[31px] top-1.5 w-4 h-4 rounded-full bg-slate-400 border-2 border-white"></span>
-            <div class="text-xs font-bold text-slate-500">115.05.30 (六) 09:00 - 11:30</div>
-            <div class="text-sm font-bold text-slate-800 mt-0.5">新生入學學力測驗（竹光國中創意樓）</div>
-            <p class="text-xs text-slate-500 mt-0.5">測驗當日發放暑假作業與營隊通知。</p>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- 部署指南與原始碼區塊 (#deploy) -->
+  <!-- 前後端完整程式碼展示與雙切換複製區塊 (#deploy) -->
   <section id="deploy" class="py-16 sm:py-24 bg-slate-900 text-white">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       
-      <div class="text-center max-w-3xl mx-auto mb-16">
-        <span class="text-xs font-bold uppercase tracking-wider text-emerald-400 bg-emerald-950/80 border border-emerald-800/80 px-3.5 py-1.5 rounded-full">Deploy In 10 Minutes</span>
-        <h2 class="text-2xl sm:text-4xl font-black text-white mt-4 tracking-tight">三步驟極速部署 LINE Bot 智慧小幫手</h2>
-        <p class="text-slate-400 text-xs sm:text-sm mt-2.5">完全免伺服器租金！採用 Google Apps Script + Google Sheets + LINE Messaging API</p>
-      </div>
-
-      <!-- 三步驟圖解 -->
-      <div class="grid md:grid-cols-3 gap-6 mb-12">
-        <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-6 relative">
-          <div class="w-10 h-10 rounded-xl bg-[#06C755] text-white flex items-center justify-center font-black text-lg mb-4 shadow-md">
-            1
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+        <div>
+          <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold border border-emerald-500/30 mb-2">
+            <i class="fa-solid fa-code"></i>
+            <span>100% Full Production Source Code</span>
           </div>
-          <h3 class="text-base font-bold text-white mb-2">建立 LINE 機器人頻道</h3>
-          <p class="text-xs text-slate-400 leading-relaxed">
-            前往 <a href="https://developers.line.biz/console/" target="_blank" class="text-emerald-400 hover:underline">LINE Developers 後台</a>，建立 Messaging API Channel，取得 <strong>Channel Access Token</strong>，並關閉預設自動回覆。
+          <h2 class="text-2xl sm:text-3xl font-black">前後端完整代碼與雙頁籤一鍵複製</h2>
+          <p class="text-slate-400 text-xs sm:text-sm mt-1">
+            提供 Google Apps Script 後端（Code.gs）與管理控制台前端（index.html）完整原始碼，絕無省略符號，點擊按鈕即可完整複製到剪貼簿！
           </p>
         </div>
 
-        <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-6 relative">
-          <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-lg mb-4 shadow-md">
-            2
-          </div>
-          <h3 class="text-base font-bold text-white mb-2">貼入 Apps Script 核心代碼</h3>
-          <p class="text-xs text-slate-400 leading-relaxed">
-            開啟空白 Google 試算表，點「擴充功能」>「Apps Script」，將下方 <code>Code.gs</code> 覆蓋貼上，執行 <code>initQuotaKnowledgeBaseSheet</code> 一秒自動產生 7 大工作表！
-          </p>
-        </div>
-
-        <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-6 relative">
-          <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black text-lg mb-4 shadow-md">
-            3
-          </div>
-          <h3 class="text-base font-bold text-white mb-2">發布 Webhook 上線</h3>
-          <p class="text-xs text-slate-400 leading-relaxed">
-            點選右上角「部署」>「新增部署作業」>「網頁應用程式」，存取權選「所有人 (Anyone)」，複製產生的網址填回 LINE Developers 的 Webhook URL 即可！
-          </p>
-        </div>
-      </div>
-
-      <!-- Code.gs 程式碼檢視與一鍵複製 -->
-      <div class="bg-slate-950 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
-        <div class="px-6 py-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
-          <div class="flex items-center space-x-2">
-            <span class="w-3 h-3 rounded-full bg-red-500/80"></span>
-            <span class="w-3 h-3 rounded-full bg-amber-500/80"></span>
-            <span class="w-3 h-3 rounded-full bg-emerald-500/80"></span>
-            <span class="text-xs font-mono text-slate-400 ml-2">Code.gs (內建 Google 試算表連線引擎)</span>
-          </div>
+        <!-- 雙切換頁籤按鈕群 -->
+        <div class="flex items-center space-x-2 bg-slate-800 p-1.5 rounded-2xl border border-slate-700">
           <button 
-            onclick="copyCodeGs()" 
-            id="copyBtn"
-            class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center space-x-1.5 shadow-sm active:scale-95"
+            id="tabBtnBackend"
+            onclick="switchCodeTab('backend')"
+            class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 bg-emerald-600 text-white shadow-xs"
           >
-            <i class="fa-regular fa-copy"></i>
-            <span id="copyBtnText">一鍵複製 Code.gs 原始碼</span>
+            <i class="fa-brands fa-google"></i>
+            <span>後端核心 Code.gs (468行)</span>
+          </button>
+          <button 
+            id="tabBtnFrontend"
+            onclick="switchCodeTab('frontend')"
+            class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 text-slate-300"
+          >
+            <i class="fa-brands fa-html5"></i>
+            <span>前端控制台 index.html (184行)</span>
           </button>
         </div>
-        <div class="p-6 max-h-[460px] overflow-y-auto custom-scrollbar font-mono text-xs text-slate-300 bg-slate-950/90">
-          <pre id="codeGsBlock"><code>// 新竹市立竹光國民中學 115學年度新生總量管制 LINE Bot 智慧小幫手 (Google Sheets 連線版)
-const CONFIG = {
-  LINE_ACCESS_TOKEN: 'YOUR_LINE_CHANNEL_ACCESS_TOKEN',
-  GEMINI_API_KEY: 'YOUR_GEMINI_API_KEY',
-  GEMINI_MODEL: 'gemini-2.5-flash',
-  SCHOOL_NAME: '新竹市立竹光國民中學',
-  UNIT_NAME: '教務處註冊組',
-  BOT_NAME: '竹光115總量管制小幫手',
-  PHONE_INFO: '(03) 524-6683 分機 613',
-  
-  // 7 大 Google 試算表名稱
-  SHEET_QA: '總量管制Q&A知識庫',
-  SHEET_MATRIX: '六大順位判定矩陣',
-  SHEET_DISTRICT: '學區劃分與改分發學校',
-  SHEET_SCHEDULE: '115學年度重要日程表',
-  SHEET_HISTORY: '歷年設籍門檻數據',
-  SHEET_INQUIRY: '家長在線提問紀錄簿',
-  SHEET_UNANSWERED: '待補充問題庫'
-};
+      </div>
 
-function doPost(e) {
-  // LINE Webhook 處理入口，即時連線 Google 試算表與支援 #提問 留言登記
-  ...
-}
+      <!-- 程式碼外框容器 -->
+      <div class="bg-slate-950 rounded-3xl border border-slate-800 overflow-hidden shadow-2xl">
+        
+        <!-- 頂部操作控制列 -->
+        <div class="bg-slate-900/90 px-6 py-4 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center space-x-3">
+            <div class="flex space-x-1.5">
+              <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
+              <div class="w-3 h-3 rounded-full bg-yellow-500/80"></div>
+              <div class="w-3 h-3 rounded-full bg-green-500/80"></div>
+            </div>
+            <span id="codeFileBadge" class="text-xs font-mono font-bold text-slate-300 bg-slate-800 px-3 py-1 rounded-lg border border-slate-700">
+              Code.gs (Google Apps Script)
+            </span>
+            <span id="codeStatusNotice" class="text-[11px] text-emerald-400 hidden sm:inline-block">
+              <i class="fa-solid fa-circle-check mr-1"></i>全量 468 行完整代碼（含 RAG、自動建表、#記住 動態寫入）
+            </span>
+          </div>
 
-function initQuotaKnowledgeBaseSheet() {
-  // 一鍵自動在 Google 試算表建立 7 大工作表並自動灌入全部問答與法規！
-  ...
-}
-// (點擊右上角按鈕即可複製完整 250+ 行生產等級原始碼)</code></pre>
+          <!-- 一鍵複製功能按鈕組 -->
+          <div class="flex items-center space-x-2">
+            <button 
+              id="copyCurrentBtn"
+              onclick="copyActiveCode()"
+              class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center space-x-1.5 shadow-md active:scale-95 cursor-pointer"
+            >
+              <i class="fa-regular fa-copy"></i>
+              <span id="copyBtnLabel">一鍵複製完整 Code.gs</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 代碼內容滾動展示區塊 (後端 Code.gs) -->
+        <div id="codeBlockBackend" class="p-6 max-h-[500px] overflow-y-auto custom-scrollbar font-mono text-xs text-slate-300 bg-[#0b0f19]">
+          <pre class="whitespace-pre"><code>__ESCAPED_CODE_GS__</code></pre>
+        </div>
+
+        <!-- 代碼內容滾動展示區塊 (前端 index.html) -->
+        <div id="codeBlockFrontend" class="p-6 max-h-[500px] overflow-y-auto custom-scrollbar font-mono text-xs text-slate-300 bg-[#0b0f19] hidden">
+          <pre class="whitespace-pre"><code>__ESCAPED_GAS_INDEX__</code></pre>
+        </div>
+
+      </div>
+
+      <!-- GAS 部署三步指引 -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+        <div class="bg-slate-800/60 border border-slate-700 p-5 rounded-2xl">
+          <div class="flex items-center space-x-2 text-emerald-400 text-xs font-bold mb-2">
+            <span class="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">1</span>
+            <span>建立 Google Apps Script</span>
+          </div>
+          <p class="text-slate-300 text-xs leading-relaxed">
+            前往 script.google.com 建立新專案，將 <code>Code.gs</code> 原始碼完整貼入，填入您的 LINE Channel Access Token 與 Google Sheet 試算表 ID。
+          </p>
+        </div>
+        <div class="bg-slate-800/60 border border-slate-700 p-5 rounded-2xl">
+          <div class="flex items-center space-x-2 text-blue-400 text-xs font-bold mb-2">
+            <span class="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center">2</span>
+            <span>一鍵自動初始化資料庫</span>
+          </div>
+          <p class="text-slate-300 text-xs leading-relaxed">
+            在 GAS 編輯器上方函式選取 <code>initQuotaKnowledgeBaseSheet</code> 並點擊執行，系統將自動在您的 Google 試算表中建立全部 7 大工作表並預填完整法規與題庫！
+          </p>
+        </div>
+        <div class="bg-slate-800/60 border border-slate-700 p-5 rounded-2xl">
+          <div class="flex items-center space-x-2 text-amber-400 text-xs font-bold mb-2">
+            <span class="w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center">3</span>
+            <span>部署為 Web 應用程式</span>
+          </div>
+          <p class="text-slate-300 text-xs leading-relaxed">
+            點擊「部署」➔「新增部署作業」➔ 選取「網路應用程式」，存取權限設為「所有人 (Anyone)」，產出的網址即為 LINE Developers 中的 Webhook URL。
+          </p>
         </div>
       </div>
 
@@ -1087,7 +777,7 @@ function initQuotaKnowledgeBaseSheet() {
       </div>
       <p class="text-slate-600 max-w-xl mx-auto">
         本專案由 陳乃誠（大乃老師）設計架構 · 專為全台教育現場打造之招生總量限制諮詢模版。
-        資料庫支援 Google 試算表 (Google Sheets) 零快取即時更新。
+        資料庫支援 Google 試算表 (Google Sheets) 零快取即時更新，支援前端以 #記住 動態寫入擴充。
       </p>
       <div class="pt-2 text-slate-700">
         MIT License · Powered by Google Apps Script & Netlify
@@ -1098,13 +788,98 @@ function initQuotaKnowledgeBaseSheet() {
   <!-- 提示 Toast -->
   <div id="toast" class="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl border border-slate-700 flex items-center space-x-2.5 transition-all duration-300 opacity-0 pointer-events-none translate-y-2">
     <i class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
-    <span id="toastMsg" class="text-xs font-semibold">已複製到剪貼簿！</span>
+    <span id="toastMsg" class="text-xs font-semibold">已成功複製到剪貼簿！</span>
   </div>
+
+  <!-- 隱藏原生代碼存放區 (避免 JS script 標籤與 </script> 衝突，並保留 100% 原始格式) -->
+  <textarea id="rawCodeGsStorage" style="display:none;">__ESCAPED_CODE_GS__</textarea>
+  <textarea id="rawGasIndexStorage" style="display:none;">__ESCAPED_GAS_INDEX__</textarea>
 
   <!-- 模擬器與互動邏輯 JS -->
   <script>
-    // 完整的 Code.gs 原始碼文字
-    const FULL_CODE_GS = `''' + js_escaped_codegs + r'''`;
+    let activeCodeTab = 'backend';
+
+    function getActiveCodeText() {
+      if (activeCodeTab === 'backend') {
+        return document.getElementById('rawCodeGsStorage').value;
+      } else {
+        return document.getElementById('rawGasIndexStorage').value;
+      }
+    }
+
+    function switchCodeTab(tab) {
+      activeCodeTab = tab;
+      const btnBackend = document.getElementById('tabBtnBackend');
+      const btnFrontend = document.getElementById('tabBtnFrontend');
+      const blockBackend = document.getElementById('codeBlockBackend');
+      const blockFrontend = document.getElementById('codeBlockFrontend');
+      const fileBadge = document.getElementById('codeFileBadge');
+      const label = document.getElementById('copyBtnLabel');
+      const notice = document.getElementById('codeStatusNotice');
+
+      if (tab === 'backend') {
+        btnBackend.className = 'px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 bg-emerald-600 text-white shadow-xs';
+        btnFrontend.className = 'px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 text-slate-300';
+        blockBackend.classList.remove('hidden');
+        blockFrontend.classList.add('hidden');
+        fileBadge.textContent = 'Code.gs (Google Apps Script)';
+        label.textContent = '一鍵複製完整 Code.gs';
+        notice.innerHTML = '<i class="fa-solid fa-circle-check mr-1"></i>全量 468 行完整代碼（含 RAG、自動建表、#記住 動態寫入）';
+      } else {
+        btnBackend.className = 'px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 text-slate-300';
+        btnFrontend.className = 'px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 bg-blue-600 text-white shadow-xs';
+        blockBackend.classList.add('hidden');
+        blockFrontend.classList.remove('hidden');
+        fileBadge.textContent = 'index.html (GAS 前端管理介面)';
+        label.textContent = '一鍵複製完整 index.html';
+        notice.innerHTML = '<i class="fa-solid fa-circle-check mr-1"></i>全量 184 行完整代碼（含即時搜尋、分類篩選、GAS 橋接）';
+      }
+    }
+
+    function copyActiveCode() {
+      const textToCopy = getActiveCodeText();
+      const fileName = activeCodeTab === 'backend' ? 'Code.gs' : 'index.html';
+      
+      // 複製功能相容支援
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(textToCopy).then(() => {
+          showToast('已成功複製完整 ' + fileName + ' 原始碼！');
+          temporarilyChangeCopyBtnText('已複製！');
+        }).catch(() => {
+          fallbackCopyText(textToCopy, fileName);
+        });
+      } else {
+        fallbackCopyText(textToCopy, fileName);
+      }
+    }
+
+    function fallbackCopyText(text, fileName) {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        showToast('已成功複製完整 ' + fileName + ' 原始碼！');
+        temporarilyChangeCopyBtnText('已複製！');
+      } catch (err) {
+        showToast('複製失敗，請手動全選複製區塊');
+      }
+      document.body.removeChild(textArea);
+    }
+
+    function temporarilyChangeCopyBtnText(text) {
+      const label = document.getElementById('copyBtnLabel');
+      const origin = activeCodeTab === 'backend' ? '一鍵複製完整 Code.gs' : '一鍵複製完整 index.html';
+      label.textContent = text;
+      setTimeout(() => {
+        label.textContent = origin;
+      }, 2500);
+    }
 
     // 預設的情境劇本
     const SCENARIOS = {
@@ -1116,22 +891,22 @@ function initQuotaKnowledgeBaseSheet() {
           {
             btnText: '順位試算：我有自有房屋所有權狀，算第幾順位？',
             userText: '老師您好，我們家住在民富里，房子是我們夫妻自有的，有房屋所有權狀，小孩是民富國小畢業，請問這樣是第幾順位？',
-            botReply: '您好！為您試算錄取順位：\n\n🎯【判定結果：第二順位】\n━━━━━━━━━━━━━━\n• 學生為新竹市轄內國小畢業生\n• 設籍於竹光學區（民富里）且與直系親屬同戶\n• 檢附自有房屋所有權狀（或當年度房屋稅籍證明）\n• 簽具家訪同意書\n\n依規定列為【第二順位】！3/14 (六) 現場審核登記請備妥全戶戶籍謄本正本、房屋權狀影本與黃單登記表。'
+            botReply: '您好！為您試算錄取順位：\\n\\n🎯【判定結果：第二順位】\\n━━━━━━━━━━━━━━\\n• 學生為新竹市轄內國小畢業生\\n• 設籍於竹光學區（民富里）且與直系親屬同戶\\n• 檢附自有房屋所有權狀（或當年度房屋稅籍證明）\\n• 簽具家訪同意書\\n\\n依規定列為【第二順位】！3/14 (六) 現場審核登記請備妥全戶戶籍謄本正本、房屋權狀影本與黃單登記表。'
           },
           {
             btnText: '租屋規定：只有「未經公證的租約」，算第幾順位？能登記嗎？',
             userText: '請問我們是在竹光學區租房子，房東不願意去法院公證，只有一般的租賃契約，這樣可以登記嗎？會排在第幾順位？',
-            botReply: '家長您好，請放心！\n\n📋【判定結果：第四順位】\n━━━━━━━━━━━━━━\n依本校 115 學年度總量管制入學作業規定：\n• 只要戶籍符合規定（學生設籍學區且直系親屬同戶），即可進行新生登記！\n• 若僅提供「未經法院公證之租賃契約」（租期須涵蓋 115/3/14 至 115/9/1 開學日，承租人為直系尊親屬），並簽具家訪同意書，將列為【第四順位】！\n\n💡 提示：若能補辦「法院公證租約」，順位即可升級為【第二順位】喔！'
+            botReply: '家長您好，請放心！\\n\\n📋【判定結果：第四順位】\\n━━━━━━━━━━━━━━\\n依本校 115 學年度總量管制入學作業規定：\\n• 只要戶籍符合規定（學生設籍學區且直系親屬同戶），即可進行新生登記！\\n• 若僅提供「未經法院公證之租賃契約」（租期須涵蓋 115/3/14 至 115/9/1 開學日，承租人為直系尊親屬），並簽具家訪同意書，將列為【第四順位】！\\n\\n💡 提示：若能補辦「法院公證租約」，順位即可升級為【第二順位】喔！'
           },
           {
             btnText: '設籍門檻：設籍大約要滿幾年才排得上？（歷年數據）',
             userText: '請問註冊組，我家小孩大約要設籍滿幾年才排得上竹光國中？很擔心排不進去！',
-            botReply: '家長您好！每年報名人數與學區新生人數不同，實際錄取截止日需待 3/14 登記審查排序後才能確定。\n\n📊【提供歷年第四順位設籍門檻參考】：\n• 111 學年度：錄取至設籍 5 年 (約國小二年級設籍)\n• 112 學年度：錄取至設籍 4 年 (約國小三年級設籍)\n• 113 學年度：錄取至設籍 8 年 (約幼兒園大班設籍)\n• 114 學年度：錄取至設籍 2 年 (約國小五年級設籍)\n\n先比順位，同順位再比設籍時間早晚！若最後一名同日遷入者，以有兄姊在校者優先，條件相同則公開抽籤。'
+            botReply: '家長您好！每年報名人數與學區新生人數不同，實際錄取截止日需待 3/14 登記審查排序後才能確定。\\n\\n📊【提供歷年第四順位設籍門檻參考】：\\n• 111 學年度：錄取至設籍 5 年 (約國小二年級設籍)\\n• 112 學年度：錄取至設籍 4 年 (約國小三年級設籍)\\n• 113 學年度：錄取至設籍 8 年 (約幼兒園大班設籍)\\n• 114 學年度：錄取至設籍 2 年 (約國小五年級設籍)\\n\\n先比順位，同順位再比設籍時間早晚！若最後一名同日遷入者，以有兄姊在校者優先，條件相同則公開抽籤。'
           },
           {
             btnText: '設籍計算：之前學區內搬家能累計嗎？中途遷出怎麼算？',
             userText: '我們以前住在境福里，前年搬到磐石里，這樣設籍時間可以合併算嗎？如果是搬去金雅里再搬回來呢？',
-            botReply: '設籍時間計算標準如下：\n\n🏡【學區內搬家 ➔ 時間可連續累計】：\n境福里與磐石里皆屬竹光學區，同一學區內之遷移，居住時間「得以累計」！\n\n⚠️【中途遷出學區 ➔ 設籍日重新計算】：\n若中途曾遷出學區（如遷至金雅里），再遷回本學區，則依規定「以最後一次遷入本學區日期為設籍日」（無法累計前段時間）！'
+            botReply: '設籍時間計算標準如下：\\n\\n🏡【學區內搬家 ➔ 時間可連續累計】：\\n境福里與磐石里皆屬竹光學區，同一學區內之遷移，居住時間「得以累計」！\\n\\n⚠️【中途遷出學區 ➔ 設籍日重新計算】：\\n若中途曾遷出學區（如遷至金雅里），再遷回本學區，則依規定「以最後一次遷入本學區日期為設籍日」（無法累計前段時間）！'
           }
         ]
       },
@@ -1143,33 +918,27 @@ function initQuotaKnowledgeBaseSheet() {
           {
             btnText: '⚡ 前端動態新增：#記住 [問題] [回答] (直接寫入試算表)',
             userText: '#記住 雙胞胎同班申請 可以在3/14現場資格審核登記時，於入學登記表黃單背面直接勾選申請同班或不同班！',
-            botReply: '✅【已成功為您記住並寫入 Google 試算表！】
-━━━━━━━━━━━━━━
-• 題目關鍵字：雙胞胎同班申請
-• 回覆內容：可以在3/14現場資格審核登記時，於入學登記表黃單背面直接勾選申請同班或不同班！
-• 儲存位置：Google 試算表「總量管制Q&A知識庫」
-
-💡 下次家長或同仁在 LINE 提問「雙胞胎同班申請」，小幫手將即時採用此內容回答！'
+            botReply: '✅【已成功為您記住並寫入 Google 試算表！】\\n━━━━━━━━━━━━━━\\n• 題目關鍵字：雙胞胎同班申請\\n• 回覆內容：可以在3/14現場資格審核登記時，於入學登記表黃單背面直接勾選申請同班或不同班！\\n• 儲存位置：Google 試算表「總量管制Q&A知識庫」\\n\\n💡 下次家長或同仁在 LINE 提問「雙胞胎同班申請」，小幫手將即時採用此內容回答！'
           },
           {
             btnText: '共同學區：北門里/新雅里19鄰想同時登記兩校之規定？',
             userText: '同仁請教：家長戶籍在北門里（竹光、光華、建華共同學區），如果想同時去光華國中和竹光國中登記，規定是怎樣？',
-            botReply: '⚖️【共同學區雙總量國中登記作業要點】：\n━━━━━━━━━━━━━━\n1. 本校與光華、建華為共同學區（北門里 115 新增），排序基準點與單一學區完全相同（先比順位，同順位比設籍時間）。\n2. 若共同學區包含另一所總量管制學校，家長【可以兩所都登記】！\n3. ⚠️ 關鍵時效：家長必須在【115年3月12日(四)前】，自行向另一所總量國中提出登記申請！\n4. 共同學區未獲錄取者，依家長意願改分發至該共同學區之他校。'
+            botReply: '⚖️【共同學區雙總量國中登記作業要點】：\\n━━━━━━━━━━━━━━\\n1. 本校與光華、建華為共同學區（北門里 115 新增），排序基準點與單一學區完全相同（先比順位，同順位比設籍時間）。\\n2. 若共同學區包含另一所總量管制學校，家長【可以兩所都登記】！\\n3. ⚠️ 關鍵時效：家長必須在【115年3月12日(四)前】，自行向另一所總量國中提出登記申請！\\n4. 共同學區未獲錄取者，依家長意願改分發至該共同學區之他校。'
           },
           {
             btnText: '同日遷入：同日設籍抽籤與多胞胎錄取規定？',
             userText: '註冊組請示：若剛好第12班最後一名錄取生，有2位以上學生同日遷入學區，排序標準？如果是雙胞胎呢？',
-            botReply: '📌【同順位同日遷入與多胞胎作業規定】：\n━━━━━━━━━━━━━━\n• 同日排序依據：最後一名如有二人以上同日遷入學區者，以【有兄姊就讀本校者為優先】；若條件仍相同，採【公開抽籤】決定！\n\n👥【多胞胎手足保障條款】：\n若最後一名錄取學生為多胞胎之一者，其多胞胎手足【隨同該生以外加名額就讀本校】！保障家庭手足同校就讀權利。'
+            botReply: '📌【同順位同日遷入與多胞胎作業規定】：\\n━━━━━━━━━━━━━━\\n• 同日排序依據：最後一名如有二人以上同日遷入學區者，以【有兄姊就讀本校者為優先】；若條件仍相同，採【公開抽籤】決定！\\n\\n👥【多胞胎手足保障條款】：\\n若最後一名錄取學生為多胞胎之一者，其多胞胎手足【隨同該生以外加名額就讀本校】！保障家庭手足同校就讀權利。'
           },
           {
             btnText: '審查查驗：3/14 現場資格審核應備證件與查驗要點？',
             userText: '審查委員您好，3/14 上午現場收件審核時，我們針對戶籍與居住證明需查核哪些核心要件？',
-            botReply: '📋【3/14 現場審查查驗核心 SOP】：\n━━━━━━━━━━━━━━\n1. 黃單檢查：背面入學登記表各欄、家訪同意書須完成簽名。\n2. 戶籍查驗（必要）：\n   • 必須具備三個月內全戶謄本正本 或 新式戶口名簿正影本。\n   • 檢視是否具【詳細記事】、學生是否與【直系尊親屬同戶】。無直系同戶者連順位都沒有！\n3. 居住證明（順位判定）：\n   • 自有：建物所有權狀 或 115房屋稅籍證明（第2/3順位）。\n   • 租賃：公證租約（第2/3順位）或未公證租約（第4順位），租期須涵蓋 115/3/14～9/1，承租人須為直系尊親屬。\n4. 空戶查訪標記：若同址設籍兩位以上非親屬新生，送入學委員會列為居住事實查核名單！'
+            botReply: '📋【3/14 現場審查查驗核心 SOP】：\\n━━━━━━━━━━━━━━\\n1. 黃單檢查：背面入學登記表各欄、家訪同意書須完成簽名。\\n2. 戶籍查驗（必要）：\\n   • 必須具備三個月內全戶謄本正本 或 新式戶口名簿正影本。\\n   • 檢視是否具【詳細記事】、學生是否與【直系尊親屬同戶】。無直系同戶者連順位都沒有！\\n3. 居住證明（順位判定）：\\n   • 自有：建物所有權狀 或 115房屋稅籍證明（第2/3順位）。\\n   • 租賃：公證租約（第2/3順位）或未公證租約（第4順位），租期須涵蓋 115/3/14～9/1，承租人須為直系尊親屬。\\n4. 空戶查訪標記：若同址設籍兩位以上非親屬新生，送入學委員會列為居住事實查核名單！'
           },
           {
             btnText: '未錄取改分發：未錄取名冊後續函送學校與時程？',
             userText: '註冊組行政處置：未錄取學生名冊何時函送各改分發學校？改分發學校包含哪些？',
-            botReply: '🏫【未錄取改分發行政處置時程】：\n━━━━━━━━━━━━━━\n1. 改分發學校清單：\n   • 單一學區未錄取生：依家長於黃單登記表勾選之意願，改分發至【虎林、成德、光華、育賢、建華國中】。\n   • 共同學區未錄取生：改分發至該共同學區之他校。\n2. 行政作業時程：\n   • 115/4/17(一)前：竹光國中函送改分發名冊至各改分發國中。\n   • 115/4/20(一)前：由各改分發國中端主動寄發新生入學通知書。\n   • 115/5/03(六)：一般國中新生報到日。'
+            botReply: '🏫【未錄取改分發行政處置時程】：\\n━━━━━━━━━━━━━━\\n1. 改分發學校清單：\\n   • 單一學區未錄取生：依家長於黃單登記表勾選之意願，改分發至【虎林、成德、光華、育賢、建華國中】。\\n   • 共同學區未錄取生：改分發至該共同學區之他校。\\n2. 行政作業時程：\\n   • 115/4/17(一)前：竹光國中函送改分發名冊至各改分發國中。\\n   • 115/4/20(一)前：由各改分發國中端主動寄發新生入學通知書。\\n   • 115/5/03(六)：一般國中新生報到日。'
           }
         ]
       }
@@ -1208,9 +977,9 @@ function initQuotaKnowledgeBaseSheet() {
       container.innerHTML = '';
       const data = SCENARIOS[currentMode];
 
-      data.prompts.forEach((p, idx) => {
+      data.prompts.forEach((p) => {
         const btn = document.createElement('button');
-        btn.className = 'w-full text-left p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-emerald-400/50 text-xs text-white transition flex items-center justify-between group active:scale-[0.99]';
+        btn.className = 'w-full text-left p-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-emerald-400/50 text-xs text-white transition flex items-center justify-between group active:scale-[0.99]';
         btn.innerHTML = `
           <span class="font-medium text-slate-200 group-hover:text-white flex items-center">
             <i class="fa-regular fa-comment-dots mr-2.5 ${currentMode === 'parent' ? 'text-emerald-400' : 'text-blue-400'}"></i>${p.btnText}
@@ -1258,7 +1027,7 @@ function initQuotaKnowledgeBaseSheet() {
       userBubble.innerHTML = `
         <span class="text-[9px] text-white/70 mb-1">已讀</span>
         <div class="max-w-[80%] chat-bubble-sent p-3 text-slate-900 leading-relaxed text-[11px] shadow-sm">
-          ${userText.replace(/\n/g, '<br>')}
+          ${userText.replace(/\\n/g, '<br>')}
         </div>
       `;
       chat.appendChild(userBubble);
@@ -1280,7 +1049,7 @@ function initQuotaKnowledgeBaseSheet() {
           </div>
           <div class="max-w-[85%]">
             <div class="chat-bubble-received p-3 text-slate-800 leading-relaxed text-[11px] shadow-sm space-y-1.5 whitespace-pre-line">
-              ${botReply}
+              ${botReply.replace(/\\n/g, '<br>')}
             </div>
             <span class="text-[9px] text-white/70 ml-1 mt-0.5 block">剛剛</span>
           </div>
@@ -1289,7 +1058,7 @@ function initQuotaKnowledgeBaseSheet() {
         chat.scrollTop = chat.scrollHeight;
 
         // 灑花特效
-        if (confetti) {
+        if (typeof confetti === 'function') {
           confetti({
             particleCount: 25,
             spread: 60,
@@ -1321,37 +1090,37 @@ function initQuotaKnowledgeBaseSheet() {
     function generateSmartAnswer(text) {
       const t = text.toLowerCase();
 
-            // 1. 處理 #記住 / #新增 / #記憶 指令 (前端即時擴充試算表知識庫)
+      // 1. 處理 #記住 / #新增 / #記憶 指令 (前端即時擴充試算表知識庫)
       if (t.startsWith('#記住') || t.startsWith('#新增') || t.startsWith('#記憶')) {
-        const rawContent = text.replace(/^[#＃](記住|新增|記憶)\s*/, '').trim();
+        const rawContent = text.replace(/^[#＃](記住|新增|記憶)\\s*/, '').trim();
         if (!rawContent) {
-          return '💡【#記住 指令使用說明】：\n請輸入「#記住 [問題或關鍵字] [回答內容]」\n\n例如：\n#記住 雙胞胎同班申請 可以在3/14現場登記時於黃單背面直接勾選同班或不同班！\n\n小幫手將為您同步寫入 Google 試算表，隨後家長提問即可秒速解答！';
+          return '💡【#記住 指令使用說明】：\\n請輸入「#記住 [問題或關鍵字] [回答內容]」\\n\\n例如：\\n#記住 雙胞胎同班申請 可以在3/14現場登記時於黃單背面直接勾選同班或不同班！\\n\\n小幫手將為您同步寫入 Google 試算表，隨後家長提問即可秒速解答！';
         }
 
         let question = '';
         let answer = '';
-        if (rawContent.includes('\n')) {
-          const parts = rawContent.split('\n');
+        if (rawContent.includes('\\n')) {
+          const parts = rawContent.split('\\n');
           question = parts[0].trim();
-          answer = parts.slice(1).join('\n').trim();
+          answer = parts.slice(1).join('\\n').trim();
         } else {
-          const spaceIdx = rawContent.search(/[\s　]+/);
+          const spaceIdx = rawContent.search(/[\\s　]+/);
           if (spaceIdx > 0) {
             question = rawContent.substring(0, spaceIdx).trim();
             answer = rawContent.substring(spaceIdx).trim();
           } else {
-            return '⚠️ 請以「空格」或「換行」分開問題與回答內容！\n例如：#記住 制服去哪買 開學前可至合作社或特約門市購買。';
+            return '⚠️ 請以「空格」或「換行」分開問題與回答內容！\\n例如：#記住 制服去哪買 開學前可至合作社或特約門市購買。';
           }
         }
 
         if (!question || !answer) {
-          return '⚠️ 請確認已輸入「問題」與「回答內容」！\n格式：#記住 [問題] [回答]';
+          return '⚠️ 請確認已輸入「問題」與「回答內容」！\\n格式：#記住 [問題] [回答]';
         }
 
         // 即時存入動態記憶中，本對話 session 隨後即時生效！
         dynamicMemory.unshift({ q: question.toLowerCase(), rawQ: question, a: answer });
 
-        return `✅【已成功為您記住並寫入 Google 試算表！】\n━━━━━━━━━━━━━━\n• 題目關鍵字：${question}\n• 回覆內容：${answer}\n• 儲存位置：Google 試算表「總量管制Q&A知識庫」\n\n💡 現在您可以直接在輸入框輸入「${question}」，小幫手已經學會並會立即回答這題囉！`;
+        return '✅【已成功為您記住並寫入 Google 試算表！】\\n━━━━━━━━━━━━━━\\n• 題目關鍵字：' + question + '\\n• 回覆內容：' + answer + '\\n• 儲存位置：Google 試算表「總量管制Q&A知識庫」\\n\\n💡 現在您可以直接在輸入框輸入「' + question + '」，小幫手已經學會並會立即回答這題囉！';
       }
 
       // 2. 先檢查是否有剛才透過 #記住 新增的自訂問題
@@ -1364,56 +1133,43 @@ function initQuotaKnowledgeBaseSheet() {
 
       // 3. 處理 #提問 / #留言
       if (t.startsWith('#提問') || t.startsWith('#留言') || t.startsWith('#諮詢')) {
-        const query = text.replace(/^[#＃](提問|留言|諮詢)\s*/, '').trim();
+        const query = text.replace(/^[#＃](提問|留言|諮詢)\\s*/, '').trim();
         const randomNo = 'Q' + Math.floor(100000 + Math.random() * 900000);
-        return `📝【已為您登錄家長在線諮詢工單】\n━━━━━━━━━━━━━━\n• 諮詢單號：${randomNo}\n• 提問內容：${query || '個人戶籍審查諮詢'}\n• 記錄位置：Google 試算表「家長在線提問紀錄簿」\n• 處理狀態：待查覆 (已同步通知註冊組同仁)\n\n同仁將儘速為您查核法規，您亦可於上班時間致電：(03) 524-6683 #613 洽詢！`;
+        return '📝【已為您登錄家長在線諮詢工單】\\n━━━━━━━━━━━━━━\\n• 諮詢單號：' + randomNo + '\\n• 提問內容：' + (query || '個人戶籍審查諮詢') + '\\n• 記錄位置：Google 試算表「家長在線提問紀錄簿」\\n• 處理狀態：待查覆 (已同步通知註冊組同仁)\\n\\n同仁將儘速為您查核法規，您亦可於上班時間致電：(03) 524-6683 #613 洽詢！';
       }
 
       if (t.includes('未公證') || t.includes('沒公證')) {
-        return `📋【115學年度 錄取順位判定：第四順位】\n━━━━━━━━━━━━━━\n依竹光國中 115 作業規定：\n• 設籍學區之國小畢業生且與直系親屬同戶。\n• 僅提供「未經法院公證之房屋租賃契約」（租期涵蓋 115/3/14～9/1，承租人為直系尊親屬）。\n• 簽具家訪同意書。\n➔ 列為【第四順位】。\n\n同順位將依戶籍遷入學區時間排序。`;
+        return '📋【115學年度 錄取順位判定：第四順位】\\n━━━━━━━━━━━━━━\\n依竹光國中 115 作業規定：\\n• 設籍學區之國小畢業生且與直系親屬同戶。\\n• 僅提供「未經法院公證之房屋租賃契約」（租期涵蓋 115/3/14～9/1，承租人為直系尊親屬）。\\n• 簽具家訪同意書。\\n➔ 列為【第四順位】。\\n\\n同順位將依戶籍遷入學區時間排序。';
       }
       if (t.includes('權狀') || t.includes('自有') || t.includes('稅籍')) {
-        return `🏠【判定：第二順位（本市）/ 第三順位（外縣市）】\n━━━━━━━━━━━━━━\n新竹市國小畢業生檢附自有房屋所有權狀或當年度房屋稅籍證明，並簽具家訪同意書者，列為【第二順位】；外縣市國小畢業生同條件者列為【第三順位】！\n\n房屋所有權人須為學生直系親屬或監護人。`;
+        return '🏠【判定：第二順位（本市）/ 第三順位（外縣市）】\\n━━━━━━━━━━━━━━\\n新竹市國小畢業生檢附自有房屋所有權狀或當年度房屋稅籍證明，並簽具家訪同意書者，列為【第二順位】；外縣市國小畢業生同條件者列為【第三順位】！\\n\\n房屋所有權人須為學生直系親屬或監護人。';
       }
       if (t.includes('公證') && (t.includes('租') || t.includes('約'))) {
-        return `⚖️【法院公證租約 ➔ 升級第二順位】\n━━━━━━━━━━━━━━\n租屋家庭若檢附「經法院公證之房屋租賃契約證明」（租賃日期須涵蓋 115/3/14 新生登記日至 9/1 開學日，承租人為直系尊親屬），並簽具家訪同意書，即可列為【第二順位】（外縣市國小為第三順位）！`;
+        return '⚖️【法院公證租約 ➔ 升級第二順位】\\n━━━━━━━━━━━━━━\\n租屋家庭若檢附「經法院公證之房屋租賃契約證明」（租賃日期須涵蓋 115/3/14 新生登記日至 9/1 開學日，承租人為直系尊親屬），並簽具家訪同意書，即可列為【第二順位】（外縣市國小為第三順位）！';
       }
       if (t.includes('幾年') || t.includes('幾歲') || t.includes('多久') || t.includes('排得上') || t.includes('門檻')) {
-        return `📊【歷年第四順位設籍門檻參考】：\n• 111學年：設籍滿 5 年 (約小二設籍)\n• 112學年：設籍滿 4 年 (約小三設籍)\n• 113學年：設籍滿 8 年 (約大班設籍)\n• 114學年：設籍滿 2 年 (約小五設籍)\n\n每年名額依實際登記狀況排序，請家長於 3/14 現場送件登記。`;
+        return '📊【歷年第四順位設籍門檻參考】：\\n• 111學年：設籍滿 5 年 (約小二設籍)\\n• 112學年：設籍滿 4 年 (約小三設籍)\\n• 113學年：設籍滿 8 年 (約大班設籍)\\n• 114學年：設籍滿 2 年 (約小五設籍)\\n\\n每年名額依實際登記狀況排序，請家長於 3/14 現場送件登記。';
       }
       if (t.includes('文件') || t.includes('帶什麼') || t.includes('黃單') || t.includes('證件') || t.includes('戶籍謄本') || t.includes('3/14')) {
-        return `🎒【3/14 (六) 現場審核應備文件清單】：\n━━━━━━━━━━━━━━\n1. 📄 新生入學通知單（黃單，背面登記表及家訪同意書填妥簽名）\n2. 👥 戶籍文件（必要，二擇一）：\n   • 3個月內全戶戶籍謄本正本\n   • 新式戶口名簿正本＋影本（驗畢退還正本，須含詳細記事）\n3. 🏠 居住證明文件（自有房屋權狀 / 稅籍證明 / 公證租約 / 未公證租約）\n\n時間：115年3月14日(六) 上午 08:00 - 11:00\n地點：竹光國中`;
+        return '🎒【3/14 (六) 現場審核應備文件清單】：\\n━━━━━━━━━━━━━━\\n1. 📄 新生入學通知單（黃單，背面登記表及家訪同意書填妥簽名）\\n2. 👥 戶籍文件（必要，二擇一）：\\n   • 3個月內全戶戶籍謄本正本\\n   • 新式戶口名簿正本＋影本（驗畢退還正本，須含詳細記事）\\n3. 🏠 居住證明文件（自有房屋權狀 / 稅籍證明 / 公證租約 / 未公證租約）\\n\\n時間：115年3月14日(六) 上午 08:00 - 11:00\\n地點：竹光國中';
       }
       if (t.includes('學區') || t.includes('北門') || t.includes('新雅') || t.includes('民富') || t.includes('境福') || t.includes('中雅') || t.includes('南勢') || t.includes('客雅') || t.includes('文雅') || t.includes('長和') || t.includes('新民')) {
-        return `🗺️【竹光國中學區與共同學區】：\n━━━━━━━━━━━━━━\n• 單一學區：民富里、磐石里、新雅里 1-18 及 20-27 鄰\n• 共同學區：\n  - 北門里 1-5、7-10、12、13、16、17 鄰 (竹光/光華/建華，115新增)\n  - 新雅里 19 鄰 (竹光/虎林)\n  - 南勢里、客雅里 (竹光/虎林/成德)\n  - 境福里 (竹光/光華)、文雅里 (竹光/成德/光華)\n  - 長和里、新民里 (竹光/育賢/光華)\n  - 中雅里 (竹光/成德/虎林)`;
+        return '🗺️【竹光國中學區與共同學區】：\\n━━━━━━━━━━━━━━\\n• 單一學區：民富里、磐石里、新雅里 1-18 及 20-27 鄰\\n• 共同學區：\\n  - 北門里 1-5、7-10、12、13、16、17 鄰 (竹光/光華/建華，115新增)\\n  - 新雅里 19 鄰 (竹光/虎林)\\n  - 南勢里、客雅里 (竹光/虎林/成德)\\n  - 境福里 (竹光/光華)、文雅里 (竹光/成德/光華)\\n  - 長和里、新民里 (竹光/育賢/光華)\\n  - 中雅里 (竹光/成德/虎林)';
       }
       if (t.includes('沒錄取') || t.includes('未錄取') || t.includes('改分發') || t.includes('轉分發')) {
-        return `🏫【未錄取學生改分發規定】：\n━━━━━━━━━━━━━━\n• 單一學區未錄取：依家長意願改分發至「虎林、成德、光華、育賢、建華國中」。（黃單背面有志願勾選欄）\n• 共同學區未錄取：改分發至該共同學區之他校。\n學校將於 4/17 前統一函送改分發名冊，各改分發學校於 4/20 前寄送入學通知。`;
+        return '🏫【未錄取學生改分發規定】：\\n━━━━━━━━━━━━━━\\n• 單一學區未錄取：依家長意願改分發至「虎林、成德、光華、育賢、建華國中」。（黃單背面有志願勾選欄）\\n• 共同學區未錄取：改分發至該共同學區之他校。\\n學校將於 4/17 前統一函送改分發名冊，各改分發學校於 4/20 前寄送入學通知。';
       }
       if (t.includes('報到') || t.includes('日程') || t.includes('測驗') || t.includes('考試') || t.includes('放榜')) {
-        return `📅【重要時程】：\n• 03/14(六) 08:00-11:00：新生入學現場登記審核\n• 03/23(一) 16:00：公告錄取結果\n• 03/30(一)-04/04(六)：正取生線上報到\n• 04/07(二)-04/08(三)：警衛室實體報到\n• 04/15(三)前：備取遞補報到作業\n• 05/30(六) 09:00-11:30：新生學力測驗`;
+        return '📅【重要時程】：\\n• 03/14(六) 08:00-11:00：新生入學現場登記審核\\n• 03/23(一) 16:00：公告錄取結果\\n• 03/30(一)-04/04(六)：正取生線上報到\\n• 04/07(二)-04/08(三)：警衛室實體報到\\n• 04/15(三)前：備取遞補報到作業\\n• 05/30(六) 09:00-11:30：新生學力測驗';
       }
       if (t.includes('轉學') || t.includes('轉入') || t.includes('學期中')) {
-        return `🔄【學期中轉學規定】：\n總量限制學校學期中各年級「僅得轉出，不得轉入」！學期中轉出缺額統一於寒暑假辦理補實，按設籍時間優先順序公開分發。`;
+        return '🔄【學期中轉學規定】：\\n總量限制學校學期中各年級「僅得轉出，不得轉入」！學期中轉出缺額統一於寒暑假辦理補實，按設籍時間優先順序公開分發。';
       }
       if (t.includes('電話') || t.includes('分機') || t.includes('地址') || t.includes('幾班')) {
-        return `ℹ️【竹光國中招生基本資訊】：\n• 招生規模：115學年度核定 12 班\n• 承辦單位：教務處註冊組\n• 諮詢專線：(03) 524-6683 分機 613\n• 學校地址：新竹市北區和平路 1 號`;
+        return 'ℹ️【竹光國中招生基本資訊】：\\n• 招生規模：115學年度核定 12 班\\n• 承辦單位：教務處註冊組\\n• 諮詢專線：(03) 524-6683 分機 613\\n• 學校地址：新竹市北區和平路 1 號';
       }
 
-      return `您好！我是【竹光國中 115學年度總量管制智慧小幫手】。\n\n您可嘗試詢問：\n• 「租約未公證算第幾順位？」\n• 「有房屋所有權狀算第幾順位？」\n• 「設籍大約幾年能錄取？」\n• 「3/14 登記要帶什麼證件？」\n• 「北門里算竹光學區嗎？」\n• 「沒錄取會改分發去哪裡？」\n• 或輸入「#提問 [內容]」登記在線諮詢！\n\n亦可致電註冊組：(03) 524-6683 #613 洽詢！`;
-    }
-
-    // 複製 Code.gs
-    function copyCodeGs() {
-      navigator.clipboard.writeText(FULL_CODE_GS).then(() => {
-        showToast('已成功複製完整 Code.gs 原始碼！');
-        document.getElementById('copyBtnText').textContent = '已複製！';
-        setTimeout(() => {
-          document.getElementById('copyBtnText').textContent = '一鍵複製 Code.gs 原始碼';
-        }, 2500);
-      }).catch(err => {
-        showToast('請手動複製程式碼區塊');
-      });
+      return '您好！我是【竹光國中 115學年度總量管制智慧小幫手】。\\n\\n您可嘗試詢問：\\n• 「租約未公證算第幾順位？」\\n• 「有房屋所有權狀算第幾順位？」\\n• 「設籍大約幾年能錄取？」\\n• 「3/14 登記要帶什麼證件？」\\n• 「北門里算竹光學區嗎？」\\n• 「沒錄取會改分發去哪裡？」\\n• 或輸入「#記住 [題目] [回答]」新增知識庫！\\n• 或輸入「#提問 [內容]」登記在線諮詢！\\n\\n亦可致電註冊組：(03) 524-6683 #613 洽詢！';
     }
 
     function showToast(msg) {
@@ -1431,14 +1187,21 @@ function initQuotaKnowledgeBaseSheet() {
     // 初始化載入
     document.addEventListener('DOMContentLoaded', () => {
       renderPromptButtons();
+      resetChatMessages();
     });
   </script>
 </body>
 </html>
-'''
+"""
 
-output_path = os.path.join(os.path.dirname(__file__), 'index.html')
-with open(output_path, 'w', encoding='utf-8') as f:
-    f.write(html_content.strip())
+# 安全替換佔位符
+final_html = html_template.replace('__ESCAPED_CODE_GS__', escaped_code_gs)
+final_html = final_html.replace('__ESCAPED_GAS_INDEX__', escaped_gas_index)
 
-print(f"Successfully generated index.html at {output_path} (size: {os.path.getsize(output_path)} bytes)")
+with open(OUTPUT_PATH, 'w', encoding='utf-8') as f:
+    f.write(final_html)
+
+print("✅ 成功生成 index.html！")
+print(f"   後端代碼長度：{len(code_gs_content)} 字元 ({len(code_gs_content.splitlines())} 行)")
+print(f"   前端代碼長度：{len(gas_index_content)} 字元 ({len(gas_index_content.splitlines())} 行)")
+print(f"   產出 index.html 檔案大小：{len(final_html)} 位元組")

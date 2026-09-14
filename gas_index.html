@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>竹光國中 115學年度新生總量管制 - 智慧知識庫控制台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen">
+
+  <!-- 頂部導航 -->
+  <header class="bg-emerald-900 text-white shadow-md">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-xl font-bold">
+          <i class="fa-solid fa-graduation-cap"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold">竹光國中 115學年度總量管制小幫手</h1>
+          <p class="text-xs text-emerald-200">教務處註冊組 · 新生入學資格審查與知識庫雲端控制台</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-2">
+        <span class="px-3 py-1 bg-emerald-800 border border-emerald-600 rounded-full text-xs text-emerald-200">
+          <i class="fa-solid fa-circle text-emerald-400 text-[10px] mr-1 animate-pulse"></i>試算表 RAG 連線中
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主內容區 -->
+  <main class="max-w-6xl mx-auto px-4 py-8 space-y-6">
+
+    <!-- 狀態卡片 -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="text-xs text-slate-500">核定班級數</div>
+        <div class="text-2xl font-black text-emerald-600 mt-1">12 班</div>
+        <div class="text-[11px] text-slate-400 mt-0.5">115學年度招生規模</div>
+      </div>
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="text-xs text-slate-500">審查順位</div>
+        <div class="text-2xl font-black text-blue-600 mt-1">6 大順位</div>
+        <div class="text-[11px] text-slate-400 mt-0.5">先比順位再比設籍時間</div>
+      </div>
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="text-xs text-slate-500">現場登記日</div>
+        <div class="text-2xl font-black text-amber-600 mt-1">3/14 (六)</div>
+        <div class="text-[11px] text-slate-400 mt-0.5">08:00 - 11:00 現場審核</div>
+      </div>
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="text-xs text-slate-500">諮詢窗口</div>
+        <div class="text-2xl font-black text-slate-800 mt-1">分機 613</div>
+        <div class="text-[11px] text-slate-400 mt-0.5">教務處註冊組專線</div>
+      </div>
+    </div>
+
+    <!-- 搜尋與分類過濾 -->
+    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div class="relative w-full sm:w-80">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-sm"></i>
+          <input type="text" id="searchInput" placeholder="搜尋順位、權狀、租約、設籍、學區、北門里、黃單..." 
+            class="w-full pl-9 pr-4 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+            oninput="filterCards()">
+        </div>
+        <div class="flex flex-wrap gap-1.5 text-xs">
+          <button onclick="filterCategory('ALL')" class="cat-btn px-3 py-1.5 rounded-lg bg-emerald-700 text-white font-medium">全部</button>
+          <button onclick="filterCategory('順位判定')" class="cat-btn px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">順位判定</button>
+          <button onclick="filterCategory('門檻分析')" class="cat-btn px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">門檻分析</button>
+          <button onclick="filterCategory('現場登記')" class="cat-btn px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">現場登記</button>
+          <button onclick="filterCategory('設籍計算')" class="cat-btn px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">設籍計算</button>
+          <button onclick="filterCategory('學區查詢')" class="cat-btn px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">學區查詢</button>
+          <button onclick="filterCategory('改分發')" class="cat-btn px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">改分發</button>
+          <button onclick="filterCategory('重要時程')" class="cat-btn px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">重要時程</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 知識庫卡片展示區 -->
+    <div id="loading" class="text-center py-12 text-slate-400">
+      <i class="fa-solid fa-spinner fa-spin text-3xl mb-3 text-emerald-600"></i>
+      <p class="text-sm">正在載入試算表知識庫資料...</p>
+    </div>
+
+    <div id="cardGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 hidden"></div>
+
+    <div id="emptyState" class="text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-sm hidden">
+      <i class="fa-solid fa-folder-open text-4xl text-slate-300 mb-2"></i>
+      <p class="text-slate-500 text-sm">找不到符合搜尋條件的問答項目</p>
+    </div>
+
+  </main>
+
+  <script>
+    let rawData = [];
+    let currentCategory = 'ALL';
+
+    window.onload = function() {
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(renderData)
+          .withFailureHandler(function(err) {
+            document.getElementById('loading').innerHTML = 
+              '<p class="text-rose-500 font-medium">載入失敗：' + err + '</p>';
+          })
+          .getKnowledgeBaseData();
+      } else {
+        // 本地預覽範例資料
+        renderData([
+          { id: 1, category: '順位判定', question: '自用住宅房屋所有權狀算第幾順位？', answer: '【第二順位】：本市國小畢業生檢附建物所有權狀或115房屋稅籍證明，並簽具家訪同意書者。外縣市同條件為第三順位。', note: '作業規定伍、三、2' },
+          { id: 2, category: '順位判定', question: '租約未經法院公證可以登記嗎？排第幾順位？', answer: '【第四順位】：僅提供未經法院公證之房屋租約(租期涵蓋115/3/14~9/1)，承租人為直系尊親屬，簽具家訪同意書。', note: '作業規定伍、三、4' },
+          { id: 3, category: '門檻分析', question: '設籍大約要滿幾年才排得上？', answer: '歷年第四順位：111年5年、112年4年、113年8年、114年2年。先比順位，同順位比設籍先後。', note: '新生簡報 P.27' },
+          { id: 4, category: '現場登記', question: '3/14現場登記要帶哪些文件？', answer: '1.黃單 2.全戶戶籍謄本或詳細記事戶口名簿正影本 3.居住證明(權狀或租約) 4.家訪同意書。', note: '新生簡報 P.21' }
+        ]);
+      }
+    };
+
+    function renderData(data) {
+      rawData = data || [];
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('cardGrid').classList.remove('hidden');
+      filterCards();
+    }
+
+    function filterCategory(cat) {
+      currentCategory = cat;
+      document.querySelectorAll('.cat-btn').forEach(btn => {
+        if (btn.innerText.includes(cat) || (cat === 'ALL' && btn.innerText === '全部')) {
+          btn.className = 'cat-btn px-3 py-1.5 rounded-lg bg-emerald-700 text-white font-medium';
+        } else {
+          btn.className = 'cat-btn px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200';
+        }
+      });
+      filterCards();
+    }
+
+    function filterCards() {
+      const q = document.getElementById('searchInput').value.trim().toLowerCase();
+      const container = document.getElementById('cardGrid');
+      container.innerHTML = '';
+
+      const filtered = rawData.filter(item => {
+        const matchCat = (currentCategory === 'ALL') || (item.category === currentCategory);
+        const matchText = !q || 
+          (item.question && item.question.toLowerCase().includes(q)) || 
+          (item.answer && item.answer.toLowerCase().includes(q)) ||
+          (item.keywords && item.keywords.toLowerCase().includes(q));
+        return matchCat && matchText;
+      });
+
+      if (filtered.length === 0) {
+        document.getElementById('emptyState').classList.remove('hidden');
+      } else {
+        document.getElementById('emptyState').classList.add('hidden');
+        filtered.forEach(item => {
+          const card = document.createElement('div');
+          card.className = 'bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition flex flex-col justify-between';
+          card.innerHTML = `
+            <div>
+              <div class="flex items-center justify-between mb-2.5">
+                <span class="px-2.5 py-1 rounded-md text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  ${item.category || '一般問答'}
+                </span>
+                <span class="text-[11px] text-slate-400">#${item.id}</span>
+              </div>
+              <h3 class="font-bold text-slate-900 text-sm mb-2 leading-snug">${item.question}</h3>
+              <p class="text-xs text-slate-600 leading-relaxed whitespace-pre-line">${item.answer}</p>
+            </div>
+            ${item.note ? `<div class="mt-3 pt-2.5 border-t border-slate-100 text-[11px] text-slate-400"><i class="fa-solid fa-scale-balanced mr-1"></i>${item.note}</div>` : ''}
+          `;
+          container.appendChild(card);
+        });
+      }
+    }
+  </script>
+</body>
+</html>
