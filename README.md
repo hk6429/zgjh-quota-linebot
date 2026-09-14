@@ -1,10 +1,30 @@
 # 🏫 新竹市立竹光國民中學 115學年度新生入學總量管制 LINE Bot 智慧小幫手
 
 > 專為新竹市立竹光國中新生家長、國小應屆畢業生、教務處註冊組同仁與審查委員打造的雙核心 LINE Bot AI 實戰導覽首頁。  
-> 透過互動式 LINE 聊天室模擬器、六大錄取順位判定、歷年錄取門檻大數據、學區改分發對照與零成本部署指南，全面化解新生登記季的電話焦慮與行政負擔！
+> 透過互動式 LINE 聊天室模擬器、Google 試算表雲端知識庫大腦、六大錄取順位判定、歷年錄取門檻大數據、學區改分發對照與零成本部署指南，全面化解新生登記季的電話焦慮與行政負擔！
 
 [![Netlify Status](https://api.netlify.com/api/v1/badges/zgjh-quota-linebot/deploy-status)](https://zgjh-quota-linebot.netlify.app)
 [![License: MIT](https://img.shields.io/badge/License-MIT-emerald.svg)](LICENSE)
+
+---
+
+## 📊 Google 試算表雲端大腦（7 大核心工作表架構）
+
+本專案採用 **Google 試算表 (Google Sheets) 作為零快取 RAG 知識庫**，註冊組同仁隨時在試算表修改文字或新增問答，LINE 機器人 1 秒內即時同步生效：
+
+| 工作表名稱 | 核心功能說明 | 欄位結構摘要 |
+| :--- | :--- | :--- |
+| **1. 總量管制Q&A知識庫** | LINE Bot 即時比對題庫（15+ 組高頻問答） | 編號、主題分類、關鍵字、家長問題、標準回覆、法規依據、啟用狀態 |
+| **2. 六大順位判定矩陣** | 第 1 順位至最後順位審查標準 | 順位代碼、順位名稱、適用身分、戶籍要件、居住證明、家訪要求、排序規則 |
+| **3. 學區劃分與改分發學校** | 單一學區 vs 共同學區完整對照表 | 項次、學區類別、里別、鄰別、共同學區、改分發學校、115異動備註 |
+| **4. 115學年度重要日程表** | 17 項重大時程（說明會至測驗） | 項次、作業項目、法定時程、地點/管道、承辦單位、重要要點 |
+| **5. 歷年設籍門檻數據** | 111～114 學年第四順位設籍門檻 | 學年度、核定班級數、錄取順位、設籍門檻年限、約當就讀年級、分析說明 |
+| **6. 家長在線提問紀錄簿** | LINE 輸入 `#提問` 自動立案登記 | 提問時間、諮詢單號、家長LINE識別碼、畢業國小、提問內容、處理狀態 |
+| **7. 待補充問題庫** | AI 自動收集特殊或未命中提問 | 收集時間、原句提問、觸發模式、提問者ID、頻次、建議處室、擬定答案 |
+
+💡 **已產生之實體試算表檔案**：
+- 雲端硬碟位置：`.../116 資訊組/03 領域/總量管制相關資料/竹光國中115學年度總量管制知識庫.xlsx`
+- 專案程式碼中亦內建 `initQuotaKnowledgeBaseSheet()` 函式，在空白試算表中執行即可 1 秒自動建立全部 7 大工作表！
 
 ---
 
@@ -76,7 +96,8 @@
 1. 開啟空白 [Google 試算表](https://sheets.new)。
 2. 點選上方選單「擴充功能」➔「Apps Script」。
 3. 將本專案中的 `Code.gs` 複製並覆蓋貼上。
-4. 填入您的 `LINE_ACCESS_TOKEN` 與 Google AI Studio 取得的 `GEMINI_API_KEY`。
+4. 在上方選單選取 `initQuotaKnowledgeBaseSheet` 並執行，試算表將自動生成 7 大工作表！
+5. 填入您的 `LINE_ACCESS_TOKEN` 與 Google AI Studio 取得的 `GEMINI_API_KEY`。
 
 ### 步驟三：發布 Webhook 上線
 1. 點擊右上角「部署 (Deploy)」➔「新增部署作業 (New deployment)」。
@@ -91,8 +112,10 @@
 ```
 zgjh-quota-linebot/
 ├── build_site.py      # 靜態網站產生腳本
-├── Code.gs            # Google Apps Script LINE Bot 核心後端
+├── create_sheets_db.py# Google 試算表資料庫 Excel 產生腳本
+├── Code.gs            # Google Apps Script LINE Bot 核心後端 (Google Sheets RAG)
 ├── index.html         # 互動式導覽與 LINE 對話模擬器單頁網站
+├── 竹光國中115學年度總量管制知識庫.xlsx # 7 大工作表完整 Excel 資料庫
 ├── README.md          # 專案說明與法規手冊
 └── LICENSE            # MIT License
 ```

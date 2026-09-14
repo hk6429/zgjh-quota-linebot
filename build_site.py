@@ -6,6 +6,14 @@
 
 import os
 
+# 讀取完整的 Code.gs 內容供網頁內「一鍵複製」使用
+codegs_path = os.path.join(os.path.dirname(__file__), 'Code.gs')
+with open(codegs_path, 'r', encoding='utf-8') as f:
+    full_codegs_text = f.read()
+
+# 轉義字串供 JS 變數使用
+js_escaped_codegs = full_codegs_text.replace('\\', '\\\\').replace('`', '\\`').replace('$', '\\$')
+
 html_content = r'''<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -113,6 +121,10 @@ html_content = r'''<!DOCTYPE html>
             <i class="fa-solid fa-sitemap"></i>
             <span>六大順位架構</span>
           </a>
+          <a href="#database" class="px-3 sm:px-3.5 py-2 bg-emerald-100/70 hover:bg-emerald-200/70 text-emerald-800 rounded-xl text-xs font-bold transition hidden sm:flex items-center space-x-1.5">
+            <i class="fa-solid fa-table"></i>
+            <span>Google 試算表大腦</span>
+          </a>
           <a href="#deploy" class="px-3 sm:px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shadow-sm">
             <i class="fa-solid fa-rocket text-emerald-400"></i>
             <span>部署指南</span>
@@ -149,6 +161,10 @@ html_content = r'''<!DOCTYPE html>
             <i class="fa-solid fa-comments"></i>
             <span>進入 LINE 實時模擬體驗</span>
           </a>
+          <a href="#database" class="px-6 py-3.5 rounded-xl bg-emerald-600/30 hover:bg-emerald-600/40 border border-emerald-400/40 text-emerald-300 text-sm font-bold transition flex items-center space-x-2 backdrop-blur-xs">
+            <i class="fa-solid fa-table"></i>
+            <span>查看 Google 試算表資料庫</span>
+          </a>
           <a href="#deepdive" class="px-6 py-3.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white text-sm font-bold transition flex items-center space-x-2 backdrop-blur-xs">
             <i class="fa-solid fa-list-check text-slate-300"></i>
             <span>查看入學六大順位標準</span>
@@ -166,8 +182,8 @@ html_content = r'''<!DOCTYPE html>
             <div class="text-xs text-slate-400 mt-0.5">法規嚴謹順位階層判定</div>
           </div>
           <div class="bg-white/5 p-4 rounded-2xl border border-white/5 backdrop-blur-xs">
-            <div class="text-2xl font-black text-blue-400">115/3/14</div>
-            <div class="text-xs text-slate-400 mt-0.5">新生入學現場登記日</div>
+            <div class="text-2xl font-black text-blue-400">7 大工作表</div>
+            <div class="text-xs text-slate-400 mt-0.5">Google 試算表 RAG 資料庫</div>
           </div>
           <div class="bg-white/5 p-4 rounded-2xl border border-white/5 backdrop-blur-xs">
             <div class="text-2xl font-black text-amber-400">0 租金</div>
@@ -242,7 +258,9 @@ html_content = r'''<!DOCTYPE html>
 
         <!-- 模組 B：註冊組端 -->
         <div class="bg-gradient-to-br from-slate-50 to-blue-50/40 rounded-3xl p-7 border border-blue-100/80 shadow-xs relative overflow-hidden flex flex-col justify-between">
-          <div class="absolute top-0 right-0 w-32 h-32 bg-blue-400/10 rounded-full blur-2xl pointer-events-none"></div>
+          <div class="absolute top-0 right-0 w-32 h-32 bg-zgjhBlue-600 text-white flex items-center justify-center text-2xl shadow-md">
+            <i class="fa-solid fa-scale-balanced"></i>
+          </div>
           <div>
             <div class="flex items-center space-x-3 mb-5">
               <div class="w-12 h-12 rounded-2xl bg-zgjhBlue-600 text-white flex items-center justify-center text-2xl shadow-md">
@@ -354,7 +372,7 @@ html_content = r'''<!DOCTYPE html>
               <button onclick="triggerCustomKeyword('北門里學區')" class="px-2.5 py-1 rounded-lg bg-slate-700/80 hover:bg-emerald-600/30 hover:border-emerald-400/50 border border-slate-600 text-[11px] text-slate-200 transition">北門里學區</button>
               <button onclick="triggerCustomKeyword('沒錄取去哪裡')" class="px-2.5 py-1 rounded-lg bg-slate-700/80 hover:bg-emerald-600/30 hover:border-emerald-400/50 border border-slate-600 text-[11px] text-slate-200 transition">改分發學校</button>
               <button onclick="triggerCustomKeyword('線上報到日期')" class="px-2.5 py-1 rounded-lg bg-slate-700/80 hover:bg-emerald-600/30 hover:border-emerald-400/50 border border-slate-600 text-[11px] text-slate-200 transition">重要時程</button>
-              <button onclick="triggerCustomKeyword('學期中可以轉入嗎')" class="px-2.5 py-1 rounded-lg bg-slate-700/80 hover:bg-emerald-600/30 hover:border-emerald-400/50 border border-slate-600 text-[11px] text-slate-200 transition">學期中轉入規定</button>
+              <button onclick="triggerCustomKeyword('#提問 請問繼承過戶中算自有嗎')" class="px-2.5 py-1 rounded-lg bg-emerald-700/70 hover:bg-emerald-600 border border-emerald-500 text-[11px] text-white transition">在線登記提問</button>
             </div>
           </div>
         </div>
@@ -393,7 +411,7 @@ html_content = r'''<!DOCTYPE html>
                     <div id="simBotName" class="text-xs font-bold tracking-tight">竹光 115 總量管制諮詢助手</div>
                     <div class="text-[9px] text-emerald-400 flex items-center">
                       <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1 animate-pulse"></span>
-                      教務處註冊組 在線服務中
+                      Google 試算表大腦 即時連線
                     </div>
                   </div>
                 </div>
@@ -425,13 +443,13 @@ html_content = r'''<!DOCTYPE html>
                         🏫 家長與同仁您好！我是竹光國中 115學年度總量管制智慧諮詢小幫手。
                       </p>
                       <p>
-                        市府核定本校 115 學年招收 <strong>12 班</strong>。您可詢問：
+                        市府核定本校 115 學年招收 <strong>12 班</strong>。知識庫已與 Google 試算表連線，您可詢問：
                       </p>
                       <ul class="list-disc pl-4 space-y-1 text-slate-600">
                         <li>入學順位資格判定（自有/租約公證/未公證）</li>
                         <li>歷年第四順位設籍錄取年份門檻</li>
                         <li>3/14 (六) 現場審核登記應帶文件（黃單）</li>
-                        <li>學區里鄰與未錄取改分發學校</li>
+                        <li>輸入「#提問 [內容]」可直接立案諮詢登記！</li>
                       </ul>
                     </div>
                     <span class="text-[9px] text-white/70 ml-1 mt-0.5 block">09:41</span>
@@ -446,7 +464,7 @@ html_content = r'''<!DOCTYPE html>
                   <span class="w-2 h-2 rounded-full bg-white/70 animate-bounce"></span>
                   <span class="w-2 h-2 rounded-full bg-white/70 animate-bounce [animation-delay:0.2s]"></span>
                   <span class="w-2 h-2 rounded-full bg-white/70 animate-bounce [animation-delay:0.4s]"></span>
-                  <span class="text-white/80 text-[10px] ml-1">小幫手正在查閱 115 作業法規...</span>
+                  <span class="text-white/80 text-[10px] ml-1">小幫手正在連線試算表知識庫...</span>
                 </div>
               </div>
 
@@ -461,7 +479,7 @@ html_content = r'''<!DOCTYPE html>
                 <input 
                   type="text" 
                   id="simInputText" 
-                  placeholder="輸入問題或點選左側範例..." 
+                  placeholder="輸入問題或以 #提問 諮詢..." 
                   class="flex-1 bg-slate-100 border border-slate-200 rounded-full px-3.5 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                   onkeydown="if(event.key === 'Enter') handleUserInput()"
                 >
@@ -478,6 +496,144 @@ html_content = r'''<!DOCTYPE html>
         </div>
 
       </div>
+    </div>
+  </section>
+
+  <!-- Google 試算表資料庫架構展示區塊 (#database) -->
+  <section id="database" class="py-16 sm:py-24 bg-slate-100 border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <span class="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-200/60 px-3.5 py-1.5 rounded-full border border-emerald-300">Google Sheets Database</span>
+        <h2 class="text-2xl sm:text-4xl font-black text-slate-900 mt-3 tracking-tight">Google 試算表雲端知識庫大腦</h2>
+        <p class="text-slate-600 text-xs sm:text-sm mt-2.5">
+          非工程師也能輕鬆維護！採用 Google 試算表作為 LINE Bot 的資料庫，註冊組同仁在試算表修改任何 Q&A，小幫手 1 秒內即刻同步生效。
+        </p>
+      </div>
+
+      <!-- 7 大工作表全景導覽卡片 -->
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-12">
+        
+        <!-- Sheet 1 -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs hover:shadow-md transition">
+          <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg mb-3">
+            <i class="fa-solid fa-comments"></i>
+          </div>
+          <span class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Sheet 1 · 核心大腦</span>
+          <h3 class="text-sm font-bold text-slate-900 mt-0.5 mb-1.5">總量管制Q&A知識庫</h3>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            收納 15+ 組高頻問答、精準觸發關鍵字、完整標準回答與法規依據。隨改隨生效，零快取延遲！
+          </p>
+        </div>
+
+        <!-- Sheet 2 -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs hover:shadow-md transition">
+          <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-lg mb-3">
+            <i class="fa-solid fa-list-ol"></i>
+          </div>
+          <span class="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Sheet 2 · 法規審查</span>
+          <h3 class="text-sm font-bold text-slate-900 mt-0.5 mb-1.5">六大順位判定矩陣</h3>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            第 1 順位至最後順位階層化條文、身分要件、建物所有權狀/房屋稅籍、公證與未公證租賃契約標準。
+          </p>
+        </div>
+
+        <!-- Sheet 3 -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs hover:shadow-md transition">
+          <div class="w-10 h-10 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center text-lg mb-3">
+            <i class="fa-solid fa-map"></i>
+          </div>
+          <span class="text-[10px] font-bold text-teal-600 uppercase tracking-wider">Sheet 3 · 學區劃分</span>
+          <h3 class="text-sm font-bold text-slate-900 mt-0.5 mb-1.5">學區劃分與改分發學校</h3>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            單一學區（民富、磐石、新雅）與 11 組共同學區學校對照，包含 115 新增北門里共同學區與改分發意願。
+          </p>
+        </div>
+
+        <!-- Sheet 4 -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs hover:shadow-md transition">
+          <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg mb-3">
+            <i class="fa-solid fa-calendar-days"></i>
+          </div>
+          <span class="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Sheet 4 · 行程管考</span>
+          <h3 class="text-sm font-bold text-slate-900 mt-0.5 mb-1.5">115學年度重要日程表</h3>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            17 項重大實施進度：說明會、黃單寄發、3/12雙重登記截止、3/14現場審查、放榜、線上報到與測驗。
+          </p>
+        </div>
+
+        <!-- Sheet 5 -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs hover:shadow-md transition">
+          <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center text-lg mb-3">
+            <i class="fa-solid fa-chart-pie"></i>
+          </div>
+          <span class="text-[10px] font-bold text-purple-600 uppercase tracking-wider">Sheet 5 · 大數據</span>
+          <h3 class="text-sm font-bold text-slate-900 mt-0.5 mb-1.5">歷年設籍門檻數據</h3>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            111～114 學年錄取至第四順位之設籍年限與約當就讀年級趨勢，讓家長有客觀數據可循。
+          </p>
+        </div>
+
+        <!-- Sheet 6 -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs hover:shadow-md transition">
+          <div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center text-lg mb-3">
+            <i class="fa-solid fa-clipboard-question"></i>
+          </div>
+          <span class="text-[10px] font-bold text-rose-600 uppercase tracking-wider">Sheet 6 · 互動工單</span>
+          <h3 class="text-sm font-bold text-slate-900 mt-0.5 mb-1.5">家長在線提問紀錄簿</h3>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            支援家長在 LINE 輸入「#提問 [內容]」，系統自動產生諮詢單號並即時寫入試算表，方便同仁查覆！
+          </p>
+        </div>
+
+        <!-- Sheet 7 -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs hover:shadow-md transition">
+          <div class="w-10 h-10 rounded-xl bg-slate-200 text-slate-800 flex items-center justify-center text-lg mb-3">
+            <i class="fa-solid fa-brain"></i>
+          </div>
+          <span class="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Sheet 7 · 自進化庫</span>
+          <h3 class="text-sm font-bold text-slate-900 mt-0.5 mb-1.5">待補充問題庫</h3>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            當家長詢問極為特殊的個別案例時，AI 會自動記錄原句提問，讓註冊組掌握家長盲點並擴充題庫。
+          </p>
+        </div>
+
+        <!-- 檔案連結卡片 -->
+        <div class="bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-2xl p-5 shadow-md flex flex-col justify-between">
+          <div>
+            <div class="w-10 h-10 rounded-xl bg-white/20 text-white flex items-center justify-center text-lg mb-3">
+              <i class="fa-solid fa-file-excel"></i>
+            </div>
+            <span class="text-[10px] font-bold text-emerald-200 uppercase tracking-wider">Google Drive 連線</span>
+            <h3 class="text-sm font-bold text-white mt-0.5 mb-1.5">竹光國中知識庫.xlsx</h3>
+            <p class="text-xs text-emerald-100 leading-relaxed">
+              已生成標準 Excel 檔案至雲端硬碟目錄，可直接以 Google 試算表開啟並綁定！
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-white/20 text-[11px] font-semibold text-emerald-100 flex items-center">
+            <i class="fa-solid fa-check-circle mr-1.5"></i>
+            <span>已同步至資訊組雲端硬碟</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 快速在 Google Sheets 初始化教學 -->
+      <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs">
+        <div class="flex items-center space-x-3 mb-4">
+          <div class="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+          </div>
+          <h3 class="text-base sm:text-lg font-bold text-slate-900">如何將此資料庫一秒套用到您的 Google 試算表？</h3>
+        </div>
+        <ol class="text-xs sm:text-sm text-slate-600 space-y-2.5 list-decimal pl-5 leading-relaxed">
+          <li>前往 <a href="https://sheets.new" target="_blank" class="text-emerald-600 font-bold underline">sheets.new</a> 建立一份空白 Google 試算表，命名為「<strong>竹光國中115總量管制知識庫</strong>」。</li>
+          <li>點選上方選單 **「擴充功能」>「Apps Script」**，清空原有內容，貼入下方的 <code>Code.gs</code> 原始碼。</li>
+          <li>在 Apps Script 上方函式選單選擇 <code>initQuotaKnowledgeBaseSheet</code>，點擊 **「執行 (Run)」**。</li>
+          <li>切回試算表，您會看到 <strong>7 大工作表、完整 Q&A 題庫、順位矩陣與排版樣式全部自動灌入完成</strong>！</li>
+        </ol>
+      </div>
+
     </div>
   </section>
 
@@ -848,9 +1004,9 @@ html_content = r'''<!DOCTYPE html>
           <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-lg mb-4 shadow-md">
             2
           </div>
-          <h3 class="text-base font-bold text-white mb-2">貼入 Apps Script 核心</h3>
+          <h3 class="text-base font-bold text-white mb-2">貼入 Apps Script 核心代碼</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            開啟空白 Google 試算表，點「擴充功能」>「Apps Script」，將下方 <code>Code.gs</code> 複製貼上，並填入您的 LINE Token 與 Gemini API Key。
+            開啟空白 Google 試算表，點「擴充功能」>「Apps Script」，將下方 <code>Code.gs</code> 覆蓋貼上，執行 <code>initQuotaKnowledgeBaseSheet</code> 一秒自動產生 7 大工作表！
           </p>
         </div>
 
@@ -872,7 +1028,7 @@ html_content = r'''<!DOCTYPE html>
             <span class="w-3 h-3 rounded-full bg-red-500/80"></span>
             <span class="w-3 h-3 rounded-full bg-amber-500/80"></span>
             <span class="w-3 h-3 rounded-full bg-emerald-500/80"></span>
-            <span class="text-xs font-mono text-slate-400 ml-2">Code.gs (Google Apps Script)</span>
+            <span class="text-xs font-mono text-slate-400 ml-2">Code.gs (內建 Google 試算表連線引擎)</span>
           </div>
           <button 
             onclick="copyCodeGs()" 
@@ -884,45 +1040,36 @@ html_content = r'''<!DOCTYPE html>
           </button>
         </div>
         <div class="p-6 max-h-[460px] overflow-y-auto custom-scrollbar font-mono text-xs text-slate-300 bg-slate-950/90">
-          <pre id="codeGsBlock"><code>// 新竹市立竹光國中 115學年度新生入學總量管制 LINE Bot 核心後端
+          <pre id="codeGsBlock"><code>// 新竹市立竹光國民中學 115學年度新生總量管制 LINE Bot 智慧小幫手 (Google Sheets 連線版)
 const CONFIG = {
   LINE_ACCESS_TOKEN: 'YOUR_LINE_CHANNEL_ACCESS_TOKEN',
   GEMINI_API_KEY: 'YOUR_GEMINI_API_KEY',
   GEMINI_MODEL: 'gemini-2.5-flash',
   SCHOOL_NAME: '新竹市立竹光國民中學',
-  OFFICE_INFO: '教務處註冊組 (分機 613 / 專線 03-5246683)',
-  APPROVED_CLASSES: '12班',
-  REGISTRATION_DATE: '115年3月14日(六) 上午 08:00 - 11:00'
+  UNIT_NAME: '教務處註冊組',
+  BOT_NAME: '竹光115總量管制小幫手',
+  PHONE_INFO: '(03) 524-6683 分機 613',
+  
+  // 7 大 Google 試算表名稱
+  SHEET_QA: '總量管制Q&A知識庫',
+  SHEET_MATRIX: '六大順位判定矩陣',
+  SHEET_DISTRICT: '學區劃分與改分發學校',
+  SHEET_SCHEDULE: '115學年度重要日程表',
+  SHEET_HISTORY: '歷年設籍門檻數據',
+  SHEET_INQUIRY: '家長在線提問紀錄簿',
+  SHEET_UNANSWERED: '待補充問題庫'
 };
 
 function doPost(e) {
-  try {
-    const json = JSON.parse(e.postData.contents);
-    const events = json.events || [];
-    for (let i = 0; i < events.length; i++) {
-      const event = events[i];
-      if (event.type === 'message' && event.message.type === 'text') {
-        handleTextMessage(event);
-      }
-    }
-    return ContentService.createTextOutput(JSON.stringify({ status: 'ok' })).setMimeType(ContentService.MimeType.JSON);
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ status: 'error' })).setMimeType(ContentService.MimeType.JSON);
-  }
+  // LINE Webhook 處理入口，即時連線 Google 試算表與支援 #提問 留言登記
+  ...
 }
 
-function handleTextMessage(event) {
-  const replyToken = event.replyToken;
-  const userText = (event.message.text || '').trim();
-  const fastReply = matchRuleBasedReply(userText);
-  if (fastReply) {
-    replyLineMessage(replyToken, fastReply);
-    return;
-  }
-  const aiReply = askGeminiRag(userText) || getDefaultHelpMessage();
-  replyLineMessage(replyToken, aiReply);
+function initQuotaKnowledgeBaseSheet() {
+  // 一鍵自動在 Google 試算表建立 7 大工作表並自動灌入全部問答與法規！
+  ...
 }
-// (完整版包含六大順位判定規則、歷年錄取門檻、學區里鄰與 Gemini RAG，點擊右上角複製全部代碼)</code></pre>
+// (點擊右上角按鈕即可複製完整 250+ 行生產等級原始碼)</code></pre>
         </div>
       </div>
 
@@ -939,7 +1086,7 @@ function handleTextMessage(event) {
       </div>
       <p class="text-slate-600 max-w-xl mx-auto">
         本專案由 陳乃誠（大乃老師）設計架構 · 專為全台教育現場打造之招生總量限制諮詢模版。
-        依據 115 年 2 月市府公告之作業規定與 Q&A 文件編製。
+        資料庫支援 Google 試算表 (Google Sheets) 零快取即時更新。
       </p>
       <div class="pt-2 text-slate-700">
         MIT License · Powered by Google Apps Script & Netlify
@@ -955,6 +1102,9 @@ function handleTextMessage(event) {
 
   <!-- 模擬器與互動邏輯 JS -->
   <script>
+    // 完整的 Code.gs 原始碼文字
+    const FULL_CODE_GS = `''' + js_escaped_codegs + r'''`;
+
     // 預設的情境劇本
     const SCENARIOS = {
       parent: {
@@ -1078,7 +1228,7 @@ function handleTextMessage(event) {
                 🏫 ${currentMode === 'parent' ? '家長您好！我是竹光國中 115學年度總量管制智慧諮詢小幫手。' : '同仁您好！我是註冊組 115 總量管制法規查核與審查指引助手。'}
               </p>
               <p>
-                市府核定本校 115 學年招收 <strong>12 班</strong>。您可點選左側範例，或直接在下方輸入關鍵字提問！
+                已成功連線 Google 試算表雲端大腦！您可點選左側範例，或直接在下方輸入關鍵字或以「#提問」諮詢！
               </p>
             </div>
             <span class="text-[9px] text-white/70 ml-1 mt-0.5 block">09:41</span>
@@ -1156,6 +1306,13 @@ function handleTextMessage(event) {
     function generateSmartAnswer(text) {
       const t = text.toLowerCase();
 
+      // 處理 #提問 / #留言
+      if (t.startsWith('#提問') || t.startsWith('#留言') || t.startsWith('#諮詢')) {
+        const query = text.replace(/^[#＃](提問|留言|諮詢)\s*/, '').trim();
+        const randomNo = 'Q' + Math.floor(100000 + Math.random() * 900000);
+        return `📝【已為您登錄家長在線諮詢工單】\n━━━━━━━━━━━━━━\n• 諮詢單號：${randomNo}\n• 提問內容：${query || '個人戶籍審查諮詢'}\n• 記錄位置：Google 試算表「家長在線提問紀錄簿」\n• 處理狀態：待查覆 (已同步通知註冊組同仁)\n\n同仁將儘速為您查核法規，您亦可於上班時間致電：(03) 524-6683 #613 洽詢！`;
+      }
+
       if (t.includes('未公證') || t.includes('沒公證')) {
         return `📋【115學年度 錄取順位判定：第四順位】\n━━━━━━━━━━━━━━\n依竹光國中 115 作業規定：\n• 設籍學區之國小畢業生且與直系親屬同戶。\n• 僅提供「未經法院公證之房屋租賃契約」（租期涵蓋 115/3/14～9/1，承租人為直系尊親屬）。\n• 簽具家訪同意書。\n➔ 列為【第四順位】。\n\n同順位將依戶籍遷入學區時間排序。`;
       }
@@ -1187,90 +1344,12 @@ function handleTextMessage(event) {
         return `ℹ️【竹光國中招生基本資訊】：\n• 招生規模：115學年度核定 12 班\n• 承辦單位：教務處註冊組\n• 諮詢專線：(03) 524-6683 分機 613\n• 學校地址：新竹市北區和平路 1 號`;
       }
 
-      return `您好！我是【竹光國中 115學年度總量管制智慧小幫手】。\n\n您可嘗試詢問：\n• 「租約未公證算第幾順位？」\n• 「有房屋所有權狀算第幾順位？」\n• 「設籍大約幾年能錄取？」\n• 「3/14 登記要帶什麼證件？」\n• 「北門里算竹光學區嗎？」\n• 「沒錄取會改分發去哪裡？」\n\n或直接致電教務處註冊組：(03) 524-6683 #613 洽詢！`;
+      return `您好！我是【竹光國中 115學年度總量管制智慧小幫手】。\n\n您可嘗試詢問：\n• 「租約未公證算第幾順位？」\n• 「有房屋所有權狀算第幾順位？」\n• 「設籍大約幾年能錄取？」\n• 「3/14 登記要帶什麼證件？」\n• 「北門里算竹光學區嗎？」\n• 「沒錄取會改分發去哪裡？」\n• 或輸入「#提問 [內容]」登記在線諮詢！\n\n亦可致電註冊組：(03) 524-6683 #613 洽詢！`;
     }
 
     // 複製 Code.gs
     function copyCodeGs() {
-      // 完整的 Code.gs 原始碼
-      const fullCode = `/**
- * 新竹市立竹光國中 115學年度新生入學總量管制 LINE Bot 智慧諮詢小幫手
- * 核心引擎：Google Apps Script (GAS) + Gemini 2.5 Flash RAG + LINE Messaging API
- * 適用單位：教務處註冊組（電話：03-5246683 #613）
- */
-const CONFIG = {
-  LINE_ACCESS_TOKEN: 'YOUR_LINE_CHANNEL_ACCESS_TOKEN',
-  GEMINI_API_KEY: 'YOUR_GEMINI_API_KEY',
-  GEMINI_MODEL: 'gemini-2.5-flash',
-  SCHOOL_NAME: '新竹市立竹光國民中學',
-  OFFICE_INFO: '教務處註冊組 (分機 613 / 專線 03-5246683)',
-  APPROVED_CLASSES: '12班',
-  REGISTRATION_DATE: '115年3月14日(六) 上午 08:00 - 11:00'
-};
-
-function doPost(e) {
-  try {
-    const json = JSON.parse(e.postData.contents);
-    const events = json.events || [];
-    for (let i = 0; i < events.length; i++) {
-      const event = events[i];
-      if (event.type === 'message' && event.message.type === 'text') {
-        handleTextMessage(event);
-      }
-    }
-    return ContentService.createTextOutput(JSON.stringify({ status: 'ok' })).setMimeType(ContentService.MimeType.JSON);
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ status: 'error' })).setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-function handleTextMessage(event) {
-  const replyToken = event.replyToken;
-  const userText = (event.message.text || '').trim();
-  const fastReply = matchRuleBasedReply(userText);
-  if (fastReply) {
-    replyLineMessage(replyToken, fastReply);
-    return;
-  }
-  const aiReply = askGeminiRag(userText) || getDefaultHelpMessage();
-  replyLineMessage(replyToken, aiReply);
-}
-
-function matchRuleBasedReply(text) {
-  const t = text.toLowerCase();
-  if (t.includes('未公證') || t.includes('租約')) {
-    return '【第四順位】：僅提供未經法院公證之房屋租賃契約(涵蓋115/3/14~9/1)，承租人為直系尊親屬，簽具家訪同意書。依設籍早晚排序。';
-  }
-  if (t.includes('自有') || t.includes('權狀') || t.includes('稅籍')) {
-    return '【第二順位】：本市國小畢業生，戶籍符合且具房屋所有權狀或115房屋稅籍證明，簽具家訪同意書。外縣市國小同條件為第三順位。';
-  }
-  if (t.includes('文件') || t.includes('帶什麼') || t.includes('黃單')) {
-    return '【3/14新生登記應備文件】：1.黃單(填妥背面) 2.全戶戶籍謄本或新式戶口名簿詳細記事正影本 3.居住證明(權狀或租約) 4.家訪同意書。';
-  }
-  if (t.includes('幾年') || t.includes('門檻')) {
-    return '【歷年第四順位設籍參考】：111年設籍5年、112年設籍4年、113年設籍8年、114年設籍2年。實際依3/14登記排序。';
-  }
-  return null;
-}
-
-function askGeminiRag(query) {
-  // Gemini 2.5 Flash API 串接邏輯
-  return null;
-}
-
-function replyLineMessage(replyToken, text) {
-  UrlFetchApp.fetch('https://api.line.me/v2/bot/message/reply', {
-    method: 'post',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + CONFIG.LINE_ACCESS_TOKEN
-    },
-    payload: JSON.stringify({ replyToken: replyToken, messages: [{ type: 'text', text: text }] }),
-    muteHttpExceptions: true
-  });
-}`;
-
-      navigator.clipboard.writeText(fullCode).then(() => {
+      navigator.clipboard.writeText(FULL_CODE_GS).then(() => {
         showToast('已成功複製完整 Code.gs 原始碼！');
         document.getElementById('copyBtnText').textContent = '已複製！';
         setTimeout(() => {

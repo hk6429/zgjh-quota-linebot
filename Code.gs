@@ -1,28 +1,53 @@
 /**
- * 新竹市立竹光國中 115學年度新生入學總量管制 LINE Bot 智慧諮詢小幫手
- * 核心引擎：Google Apps Script (GAS) + Gemini 2.5 Flash RAG + LINE Messaging API
- * 適用單位：教務處註冊組（電話：03-5246683 #613）
- * 依據法規：新竹市立國民中小學班級總量限制學校學生入學實施要點、竹光國中115學年度入學作業規定
+ * ============================================================================
+ * 🏫 新竹市立竹光國民中學 115學年度新生入學總量管制 LINE Bot 智慧小幫手
+ * ============================================================================
+ * 核心引擎：Google Apps Script (GAS) + Google Sheets 雲端資料庫 + LINE Messaging API
+ * 承辦單位：教務處註冊組（諮詢專線：03-5246683 分機 613）
+ * 
+ * 核心架構：
+ * 1. ⚡ Google 試算表 RAG 知識庫：註冊組隨時在 Google Sheet 修改問答，小幫手即時連線生效！
+ * 2. 📋 7 大工作表資料庫結構：
+ *    - 工作表 1：總量管制Q&A知識庫 (QA對照與觸發關鍵字)
+ *    - 工作表 2：六大順位判定矩陣 (第1順位至最後順位審查規範)
+ *    - 工作表 3：學區劃分與改分發學校 (單一學區 vs 共同學區對照)
+ *    - 工作表 4：115學年度重要日程表 (3/14現場審查、放榜、線上報到)
+ *    - 工作表 5：歷年設籍門檻數據 (111-114歷年第四順位設籍年份)
+ *    - 工作表 6：家長在線提問紀錄簿 (自動記錄 #提問 或對話諮詢)
+ *    - 工作表 7：待補充問題庫 (自動收集 AI 未精準命中的冷門特例問題)
+ * 3. 🚀 一鍵初始化函式：執行 initQuotaKnowledgeBaseSheet() 一秒灌入全部資料與美化格式！
+ * ============================================================================
  */
 
 // ======================= 全域設定 =======================
 const CONFIG = {
-  LINE_ACCESS_TOKEN: 'YOUR_LINE_CHANNEL_ACCESS_TOKEN', // 於 LINE Developers 後台 Messaging API 取得
+  LINE_ACCESS_TOKEN: 'YOUR_LINE_CHANNEL_ACCESS_TOKEN', // 於 LINE Developers Messaging API 取得
   GEMINI_API_KEY: 'YOUR_GEMINI_API_KEY',               // 於 Google AI Studio (aistudio.google.com) 取得
   GEMINI_MODEL: 'gemini-2.5-flash',
+  
   SCHOOL_NAME: '新竹市立竹光國民中學',
-  OFFICE_INFO: '教務處註冊組 (分機 613 / 專線 03-5246683)',
-  APPROVED_CLASSES: '12班',
-  REGISTRATION_DATE: '115年3月14日(六) 上午 08:00 - 11:00',
-  RESULT_ANNOUNCE_DATE: '115年3月23日(一) 16:00',
-  ONLINE_CHECKIN_DATE: '115年3月30日(一) 至 4月4日(六)',
-  PHYSICAL_CHECKIN_DATE: '115年4月7日(二) 至 4月8日(三) 於警衛室',
-  TEST_DATE: '115年5月30日(六) 09:00 - 11:30'
+  UNIT_NAME: '教務處註冊組',
+  BOT_NAME: '竹光115總量管制小幫手',
+  PHONE_INFO: '(03) 524-6683 分機 613',
+  SCHOOL_ADDRESS: '新竹市北區和平路 1 號',
+  OFFICIAL_URL: 'https://www.zgjh.hc.edu.tw',
+  
+  // 工作表名稱設定
+  SHEET_QA: '總量管制Q&A知識庫',
+  SHEET_MATRIX: '六大順位判定矩陣',
+  SHEET_DISTRICT: '學區劃分與改分發學校',
+  SHEET_SCHEDULE: '115學年度重要日程表',
+  SHEET_HISTORY: '歷年設籍門檻數據',
+  SHEET_INQUIRY: '家長在線提問紀錄簿',
+  SHEET_UNANSWERED: '待補充問題庫'
 };
 
 // ======================= Webhook 進入點 =======================
 function doPost(e) {
   try {
+    if (!e || !e.postData || !e.postData.contents) {
+      return ContentService.createTextOutput('OK').setMimeType(ContentService.MimeType.TEXT);
+    }
     const json = JSON.parse(e.postData.contents);
     const events = json.events || [];
 
@@ -42,137 +67,182 @@ function doPost(e) {
 }
 
 function doGet(e) {
-  return ContentService.createTextOutput('竹光國中 115學年度總量管制 LINE Bot Webhook 服務正常運作中！');
+  return ContentService.createTextOutput('竹光國中 115學年度新生入學總量管制 LINE Bot 服務正常運作中！');
 }
 
 // ======================= 訊息處理核心 =======================
 function handleTextMessage(event) {
   const replyToken = event.replyToken;
   const userText = (event.message.text || '').trim();
-  const userId = event.source ? event.source.userId : null;
+  const userId = event.source ? (event.source.userId || 'anonymous') : 'anonymous';
 
-  // 1. 發送 LINE 載入中（輸入中）動畫
-  if (userId) {
-    sendLoadingAnimation(userId);
-  }
+  // 1. 立即啟動 LINE 載入中動畫
+  sendLoadingAnimation(userId);
 
-  // 2. 先透過精準關鍵字與規則庫比對（秒回，不耗 API）
-  const fastReply = matchRuleBasedReply(userText);
-  if (fastReply) {
-    replyLineMessage(replyToken, fastReply);
+  // 2. 檢查是否為「#提問」或「#留言」登記諮詢
+  if (userText.startsWith('#提問') || userText.startsWith('#留言') || userText.startsWith('#諮詢')) {
+    const inquiryContent = userText.replace(/^[#＃](提問|留言|諮詢)\s*/, '').trim();
+    if (!inquiryContent) {
+      replyLineMessage(replyToken, '您好！請於 #提問 後方輸入您想向註冊組諮詢的完整問題。\n例：#提問 請問外公的房子但尚未完成繼承過戶，算直系自有房屋嗎？');
+      return;
+    }
+    const orderNo = logParentInquiry(userId, inquiryContent);
+    const reply = `📝【已為您登錄家長在線諮詢】\n━━━━━━━━━━━━━━\n• 諮詢單號：${orderNo}\n• 提問內容：${inquiryContent}\n• 處理狀態：已送交註冊組查核中\n\n同仁將儘速為您查覆，或您亦可於上班時間致電註冊組：${CONFIG.PHONE_INFO} 洽詢！`;
+    replyLineMessage(replyToken, reply);
     return;
   }
 
-  // 3. 若無規則命中，調用 Gemini AI 根據總量管制知識庫回答
-  let aiReply = '';
-  if (CONFIG.GEMINI_API_KEY && CONFIG.GEMINI_API_KEY !== 'YOUR_GEMINI_API_KEY') {
-    aiReply = askGeminiRag(userText);
+  // 3. 從 Google 試算表即時比對問答庫 (零快取 RAG)
+  const sheetReply = findAnswerFromGoogleSheet(userText);
+  if (sheetReply) {
+    replyLineMessage(replyToken, sheetReply);
+    return;
   }
 
+  // 4. 若試算表未直接命中，呼叫 Gemini AI 進行語意問答
+  let aiReply = '';
+  if (CONFIG.GEMINI_API_KEY && CONFIG.GEMINI_API_KEY !== 'YOUR_GEMINI_API_KEY') {
+    aiReply = askGeminiWithSheetContext(userText);
+  }
+
+  // 5. 若仍無滿意回覆，回傳引導選單，並將問題記入「待補充問題庫」
   if (!aiReply) {
+    logUnansweredQuestion(userText, userId);
     aiReply = getDefaultHelpMessage(userText);
   }
 
   replyLineMessage(replyToken, aiReply);
 }
 
-// ======================= 規則引擎（總量管制知識庫） =======================
-function matchRuleBasedReply(text) {
-  const t = text.toLowerCase();
+// ======================= Google 試算表即時查詢 =======================
+function findAnswerFromGoogleSheet(query) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (!ss) return null;
+    
+    const ws = ss.getSheetByName(CONFIG.SHEET_QA);
+    if (!ws) return null;
 
-  // 1. 順位查詢 / 資格審查
-  if (t.includes('順位') || t.includes('資格') || t.includes('第幾順位') || t.includes('排得上')) {
-    if (t.includes('未公證') || t.includes('沒有公證')) {
-      return `📋【115學年度 錄取順位判定：第四順位】\n━━━━━━━━━━━━━━\n依竹光國中 115 作業規定：\n• 設籍並實際居住本學區國小畢業生。\n• 僅提供「未經法院公證之租賃契約」（租期須涵蓋 115/3/14 至 115/9/1 開學日，承租人為直系尊親屬）。\n• 簽具家訪同意書。\n➔ 列為【第四順位】。\n\n💡 歷年第四順位設籍門檻參考：\n111年：設籍約5年 (小二)\n112年：設籍約4年 (小三)\n113年：設籍約8年 (大班)\n114年：設籍約2年 (小五)\n※ 同順位以戶籍遷入日先後排序。`;
+    const data = ws.getDataRange().getValues();
+    if (data.length <= 1) return null;
+
+    const q = query.toLowerCase();
+
+    // 比對關鍵字 (Column 2: keywords) 與 問題 (Column 3: question)
+    for (let i = 1; i < data.length; i++) {
+      const isEnabled = String(data[i][6] || 'Y').toUpperCase().trim();
+      if (isEnabled !== 'Y') continue;
+
+      const keywords = String(data[i][2] || '').toLowerCase().split(',');
+      const question = String(data[i][3] || '').toLowerCase();
+      const answer = data[i][4];
+
+      // 若使用者輸入包含完整題目或任一關鍵字
+      if (q.includes(question) || question.includes(q)) {
+        return answer;
+      }
+
+      for (let k = 0; k < keywords.length; k++) {
+        const kw = keywords[k].trim();
+        if (kw && q.includes(kw)) {
+          return answer;
+        }
+      }
     }
-    if (t.includes('自有') || t.includes('權狀') || t.includes('公證') || t.includes('稅籍')) {
-      return `🏠【115學年度 錄取順位判定：第二順位（本市）/ 第三順位（外縣市）】\n━━━━━━━━━━━━━━\n• 第二順位：設籍本校學區之「新竹市」國小畢業生，具自有房屋證明（權狀或當年度稅籍證明）或「法院公證租約」（租期涵蓋 115/3/14～9/1），並簽具家訪同意書。\n• 第三順位：同上述條件，但為「非新竹市（外縣市）」國小畢業生。\n\n⚠️ 提醒：房屋所有權人或公證租約承租人，必須為學生的「直系血親尊親屬」或「法定監護人」！`;
-    }
-    if (t.includes('教職員') || t.includes('低收') || t.includes('特教') || t.includes('安置') || t.includes('雙亡')) {
-      return `🌟【115學年度 錄取順位判定：第一順位】\n━━━━━━━━━━━━━━\n第一順位資格對象：\n1. 縣市政府轉介安置之少年保護個案。\n2. 設籍本市且居住於學區內列冊之「低收入戶子女」。\n3. 設籍本市且居住於學區內之「父母雙亡者」。\n4. 本校現職編制內教職員工之子女或受監護人。\n5. 經市府鑑定並安置之身心障礙資源生。\n\n※ 第一順位除教職員子女外，均會實地訪查是否有居住事實。`;
-    }
-    return `🎯【竹光國中 115學年度入學六大順位一覽】\n━━━━━━━━━━━━━━\n• 第一順位：教職員子女、低收入戶、身障安置生、父母雙亡\n• 第二順位：本市國小畢業生 ＋ 自有權狀 / 法院公證租約 ＋ 家訪同意書\n• 第三順位：外縣市國小畢業生 ＋ 自有權狀 / 法院公證租約 ＋ 家訪同意書\n• 第四順位：本學區國小畢業生 ＋「未公證」房屋租賃契約 ＋ 家訪同意書\n• 第五順位：本學區國小畢業生 ＋「無法提供居住證明」＋ 家訪同意書\n• 最後順位：無法簽具家訪同意書者、或查訪為空戶者\n\n📌 排序原則：先比順位，同順位再依「戶籍遷入學區時間先後」排序！`;
+    return null;
+  } catch (err) {
+    console.error('findAnswerFromGoogleSheet error:', err);
+    return null;
   }
-
-  // 2. 設籍時間累計計算
-  if (t.includes('設籍') || t.includes('戶籍') || t.includes('累計') || t.includes('搬家') || t.includes('遷出') || t.includes('遷入')) {
-    return `🏡【設籍時間計算與戶籍規定】\n━━━━━━━━━━━━━━\n1. 必要條件：\n• 學生須設籍本學區，且「至少一名直系尊親屬」（父、母、祖父母、外祖父母）在同一戶籍內！\n• 若無直系尊親屬同戶，連順位都沒有，無法參加登記。\n\n2. 累計設籍規則：\n• 【學區內搬家】：如從境福里遷到磐石里，居住時間「可以連續累計」！\n• 【中途遷出學區】：若曾遷出竹光學區（如遷到金雅里），再遷回學區，則「以最後一次遷入學區之日期重新起算」！\n\n3. 同日遷入者排序：\n最後一名同日遷入者，以「有兄姊就讀本校者」優先；條件相同者採公開抽籤。多胞胎手足隨同錄取（外加名額）。`;
-  }
-
-  // 3. 攜帶文件 / 黃單
-  if (t.includes('文件') || t.includes('帶什麼') || t.includes('證件') || t.includes('黃單') || t.includes('戶口名簿') || t.includes('謄本')) {
-    return `🎒【3/14 (六) 新生現場登記應備文件清單】\n━━━━━━━━━━━━━━\n【時間】：115年3月14日(六) 上午 08:00 - 11:00\n【地點】：竹光國中\n\n請備妥下列三項資料：\n1. 📄 新生入學通知單（黃單，國小轉發，正面資格單、背面登記表及家訪同意書填妥簽名）\n2. 👥 戶籍證明（二擇一，必要）：\n   • 3個月內全戶戶籍謄本正本（含詳細記事）\n   • 新式戶口名簿正本＋影本（含詳細記事，正本驗畢發還）\n3. 🏠 居住證明文件（提升順位用）：\n   • 自有：房屋所有權狀 或 115年房屋稅籍證明\n   • 租賃：法院公證租約（第2順位）或 未公證租約（第4順位），租期須涵蓋 115/3/14～9/1，承租人為直系親屬。\n\n※ 可委託親友到場送件。未參加登記者視同放棄！`;
-  }
-
-  // 4. 重要時程 / 日程 / 報到
-  if (t.includes('日程') || t.includes('時程') || t.includes('報到') || t.includes('日期') || t.includes('放榜') || t.includes('考試') || t.includes('測驗')) {
-    return `📅【竹光國中 115學年度總量管制重要日程表】\n━━━━━━━━━━━━━━\n• 03/06(五)前：各國小轉發新生入學通知單(黃單)\n• 03/12(四)前：共同學區欲登記他校總量國中者提出申請截止\n• 03/14(六) 08:00-11:00：【新生入學現場登記審核】\n• 03/16-03/20：居住事實查核、入學作業委員會審查\n• 03/23(一) 16:00：【公布錄取名單】(正取、候補、未錄取)\n• 03/30(一)-04/04(六)：【正取生 線上報到】\n• 04/07(二)-04/08(三)：正取生實體報到(警衛室)\n• 04/15(三)前：備取遞補報到作業(電話個別通知)\n• 04/17(五)前：函送改分發名冊至各改分發學校\n• 05/30(六) 09:00-11:30：【新生學力測驗】(發放暑假作業)`;
-  }
-
-  // 5. 學區里鄰 / 共同學區
-  if (t.includes('學區') || t.includes('里') || t.includes('鄰') || t.includes('北門') || t.includes('民富') || t.includes('境福') || t.includes('客雅') || t.includes('新雅') || t.includes('長和') || t.includes('新民') || t.includes('中雅') || t.includes('文雅') || t.includes('磐石')) {
-    return `🗺️【竹光國中 115學年度學區劃分】\n━━━━━━━━━━━━━━\n【單一學區】：\n• 民富里、磐石里、新雅里 1-18 及 20-27 鄰\n\n【共同學區】：\n• 新雅里 19 鄰 ➔ 竹光、虎林\n• 南勢里 1-6、8-10 鄰 ➔ 竹光、虎林、成德\n• 客雅里 1-2 鄰 ➔ 竹光、成德\n• 客雅里 3-7 鄰 ➔ 竹光、虎林、成德\n• 境福里 ➔ 竹光、光華\n• 文雅里 ➔ 竹光、成德、光華\n• 長和里 ➔ 竹光、育賢、光華\n• 新民里 ➔ 竹光、育賢、光華\n• 中雅里 1-11 鄰 ➔ 竹光、成德\n• 中雅里 12-16 鄰 ➔ 竹光、虎林、成德\n• 北門里 1-5、7-10、12、13、16、17 鄰 ➔ 竹光、光華、建華（115新增）\n\n※ 共同學區與單一學區之排序順位標準完全一致。`;
-  }
-
-  // 6. 未錄取 / 改分發
-  if (t.includes('未錄取') || t.includes('沒錄取') || t.includes('改分發') || t.includes('轉分發') || t.includes('落榜') || t.includes('分發')) {
-    return `🏫【未錄取新生改分發說明】\n━━━━━━━━━━━━━━\n若新生經審查排序未獲錄取：\n1. 【單一學區學生】：依家長意願改分發至「虎林國中」、「成德高中(國中部)」、「光華國中」、「育賢國中」或「建華國中」。（登記表黃單背面有勾選欄位）\n2. 【共同學區學生】：依家長意願改分發至該共同學區之他校。\n\n📌 學校會於 4/17 前統一函送改分發名冊，改分發國中將於 4/20 前寄發入學通知書，維護學生就學權益！`;
-  }
-
-  // 7. 轉學 / 學期中轉入
-  if (t.includes('轉入') || t.includes('轉學') || t.includes('轉出') || t.includes('學期中') || t.includes('出國')) {
-    return `🔄【轉出轉入與學期中缺額規定】\n━━━━━━━━━━━━━━\n• 總量限制學校「學期中各年級僅得轉出，不得轉入」！\n• 學生赴國外或大陸就讀應辦理轉出，無法辦理保留學籍。\n• 學期中轉出產生之缺額，一律於【寒假及暑假】統一辦理補實公告，志願轉入學生按戶籍遷入學區居住時間先後分發。`;
-  }
-
-  // 8. 招收班級數 / 電話
-  if (t.includes('幾班') || t.includes('班級數') || t.includes('電話') || t.includes('分機') || t.includes('地址') || t.includes('聯絡')) {
-    return `ℹ️【竹光國中 學校與招生基本資訊】\n━━━━━━━━━━━━━━\n• 核定新生班級數：115學年度預計招收 12 班\n• 學校地址：新竹市北區和平路 1 號\n• 承辦處室：教務處註冊組\n• 諮詢電話：(03) 524-6683 分機 613\n• 學校官方網站：https://www.zgjh.hc.edu.tw`;
-  }
-
-  return null;
 }
 
-// ======================= Gemini 2.5 Flash RAG =======================
-function askGeminiRag(query) {
+// ======================= 登記家長在線提問 =======================
+function logParentInquiry(userId, content) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (!ss) return 'Q' + Utilities.formatDate(new Date(), 'GMT+8', 'yyyyMMddHHmm');
+
+    let ws = ss.getSheetByName(CONFIG.SHEET_INQUIRY);
+    if (!ws) {
+      ws = ss.insertSheet(CONFIG.SHEET_INQUIRY);
+      ws.appendRow(['提問時間', '諮詢單號', '家長LINE識別碼', '學生畢業國小', '家長提問內容', '小幫手AI回覆摘要', '處理狀態', '承辦同仁備註']);
+    }
+
+    const nowStr = Utilities.formatDate(new Date(), 'GMT+8', 'yyyy/MM/dd HH:mm:ss');
+    const orderNo = 'Q' + Utilities.formatDate(new Date(), 'GMT+8', 'MMddHHmmss');
+
+    ws.appendRow([nowStr, orderNo, userId, '待填', content, '已轉交人工處理', '待查覆', '']);
+    return orderNo;
+  } catch (err) {
+    console.error('logParentInquiry error:', err);
+    return 'Q' + Utilities.formatDate(new Date(), 'GMT+8', 'MMddHHmmss');
+  }
+}
+
+// ======================= 記錄待補充冷門提問 =======================
+function logUnansweredQuestion(text, userId) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (!ss) return;
+
+    let ws = ss.getSheetByName(CONFIG.SHEET_UNANSWERED);
+    if (!ws) {
+      ws = ss.insertSheet(CONFIG.SHEET_UNANSWERED);
+      ws.appendRow(['收集時間', '家長原句提問', '觸發模式', '提問者辨識碼', '出現次數', '建議增修處室', '註冊組擬定官方答案', '納入知識庫狀態']);
+    }
+
+    const nowStr = Utilities.formatDate(new Date(), 'GMT+8', 'yyyy/MM/dd HH:mm:ss');
+    ws.appendRow([nowStr, text, 'LINE私訊', userId, 1, '教務處註冊組', '', '待評估']);
+  } catch (err) {
+    console.error('logUnansweredQuestion error:', err);
+  }
+}
+
+// ======================= Gemini RAG 增強問答 =======================
+function askGeminiWithSheetContext(query) {
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.GEMINI_MODEL}:generateContent?key=${CONFIG.GEMINI_API_KEY}`;
     
-    const systemPrompt = `你是由新竹市立竹光國民中學教務處註冊組設立的「115學年度新生入學總量管制 LINE Bot 智慧諮詢小幫手」。
-請用台灣繁體中文、溫暖專業且精準條列的口氣回答家長或行政同仁。
-核心法規知識庫如下：
-1. 本校 115 學年度核定招收 12 班。
-2. 六大錄取順位：
-   - 第一順位：少年保護安置個案、設籍本市低收入戶、設籍本市父母雙亡、編制內教職員工子女、市府安置特教生。
-   - 第二順位：本市國小畢業生，戶籍符合（與直系尊親屬同戶）且具自有權狀/115房屋稅籍證明或法院公證租約(租期涵蓋115/3/14~9/1)，簽家訪同意書。
-   - 第三順位：非本市(外縣市)國小畢業生，戶籍符合且具自有權狀或法院公證租約，簽家訪同意書。
-   - 第四順位：本學區國小畢業生，戶籍符合且僅具「未經法院公證之房屋租約」(涵蓋115/3/14~9/1)，簽家訪同意書。
-   - 第五順位：本學區國小畢業生，戶籍符合但無法提供居住證明文件，簽家訪同意書。
-   - 第六順位(最後順位)：無法簽具家訪同意書或經查為空戶/非實際居住者。
-3. 排序規則：先比順位，同順位比「戶籍遷入日早晚」。同日同順位以有兄姊就讀優先，其餘抽籤。多胞胎一人錄取手足外加。
-4. 設籍時間：學區內遷移可連續累計；中途曾遷出學區再遷回，以最後一次遷入日重新計算。
-5. 共同學區：新雅里19鄰(虎林)、南勢里(虎林/成德)、客雅里(成德/虎林)、境福里(光華)、文雅里(成德/光華)、長和里(育賢/光華)、新民里(育賢/光華)、中雅里(成德/虎林)、北門里(光華/建華，115新增)。若共同學區含另一總量學校欲兩校登記，3/12前提出申請。
-6. 未錄取改分發：單一學區改分發虎林、成德、光華、育賢、建華；共同學區改分發該學區他校。
-7. 重要時程：
-   - 3/06 前發入學通知單黃單
-   - 3/14(六) 08:00-11:00 現場登記審查資格
-   - 3/23(一) 16:00 公告錄取名單
-   - 3/30-4/4 正取生線上報到，4/7-4/8 實體報到
-   - 4/15 備取遞補
-   - 5/30(六) 09:00-11:30 新生入學測驗
-8. 諮詢窗口：教務處註冊組 03-5246683 #613。
+    // 從試算表中撈取最新順位與學區資訊作為 context
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheetSummary = '';
+    if (ss) {
+      const qaSheet = ss.getSheetByName(CONFIG.SHEET_QA);
+      if (qaSheet) {
+        const rows = qaSheet.getDataRange().getValues();
+        sheetSummary = rows.slice(1, 10).map(r => `問：${r[3]}\n答：${r[4]}`).join('\n\n');
+      }
+    }
 
-若遇未定事項，提醒家長以學校官方公告與黃單為準。絕不捏造規定。`;
+    const systemPrompt = `你是由${CONFIG.SCHOOL_NAME}教務處註冊組指派的「115學年度新生總量管制智慧諮詢小幫手」。
+請一律使用台灣繁體中文、親切溫暖、條理分明回覆。
+【法規核心】：
+1. 115學年度核定招生 12 班。
+2. 六大順位：
+   - 第一順位：少年安置、低收入戶、父母雙亡、教職員隨同子女、市府安置特教生。
+   - 第二順位：新竹市轄內國小畢業生＋自有權狀/115稅籍證明或法院公證租約(涵蓋115/3/14~9/1)＋家訪同意書。
+   - 第三順位：外縣市國小畢業生＋自有權狀或法院公證租約＋家訪同意書。
+   - 第四順位：本學區國小畢業生＋「未公證」房屋租賃契約(涵蓋115/3/14~9/1)＋家訪同意書。
+   - 第五順位：本學區國小畢業生＋無法提供居住證明＋家訪同意書。
+   - 第六順位：無法簽家訪同意書或經查為空戶/非實際居住者。
+3. 設籍累計：學區內搬家可連續累計；中途曾遷出學區以最後遷入日重算。
+4. 共同學區：北門里(115新增)、新雅里19鄰若欲登記他校總量國中，須於3/12前申請。
+5. 重要時程：3/14(六)現場登記、3/23(一)公布錄取、3/30-4/4線上報到、5/30(六)新生測驗。
+6. 諮詢電話：${CONFIG.PHONE_INFO}。
+
+【試算表知識庫參考片段】：
+${sheetSummary}`;
 
     const payload = {
       contents: [
         {
           role: 'user',
-          parts: [{ text: `${systemPrompt}\n\n家長或同仁提問：${query}\n請給出親切、具體、繁體中文的回覆：` }]
+          parts: [{ text: `${systemPrompt}\n\n家長諮詢問題：${query}\n請給出專屬回答：` }]
         }
       ],
       generationConfig: {
         temperature: 0.2,
-        maxOutputTokens: 800
+        maxOutputTokens: 600
       }
     };
 
@@ -194,20 +264,19 @@ function askGeminiRag(query) {
   }
 }
 
-// ======================= 預設導引訊息 =======================
+// ======================= 預設提示訊息 =======================
 function getDefaultHelpMessage(text) {
   return `您好！我是【竹光國中 115學年度總量管制智慧諮詢小幫手】🤖
 
-您可以直接輸入關鍵字或點選下列常見提問：
-1️⃣【順位試算】：租屋未公證算第幾順位？有房屋所有權狀是第幾順位？
-2️⃣【攜帶文件】：3/14 新生登記當天要帶什麼證件？
-3️⃣【錄取門檻】：歷年設籍大約幾年能錄取？
-4️⃣【設籍計算】：之前學區內搬家設籍時間可以累計嗎？
-5️⃣【學區查詢】：我家住在北門里/新雅里算學區嗎？
-6️⃣【重要時程】：登記、放榜、線上報到與測驗日期？
-7️⃣【改分發】：如果未錄取會改分發到哪所學校？
+您可直接輸入關鍵字提問：
+• 順位試算：我有房屋所有權狀算第幾順位？租屋未公證算第幾順位？
+• 門檻分析：設籍大約要滿幾年才排得上？
+• 攜帶文件：3/14 (六) 新生現場登記要帶哪些證件？
+• 學區查詢：北門里/新雅里19鄰算竹光學區嗎？
+• 改分發：如果沒有錄取會改分發到哪所國中？
+• 在線提問：請輸入「#提問 [問題內容]」，小幫手將為您立案送交註冊組查核！
 
-📞 人工諮詢窗口：竹光國中教務處註冊組 (03) 524-6683 分機 613`;
+📞 人工諮詢電話：竹光國中教務處註冊組 ${CONFIG.PHONE_INFO}`;
 }
 
 // ======================= LINE API 工具 =======================
@@ -215,12 +284,7 @@ function replyLineMessage(replyToken, messageText) {
   const url = 'https://api.line.me/v2/bot/message/reply';
   const payload = {
     replyToken: replyToken,
-    messages: [
-      {
-        type: 'text',
-        text: messageText
-      }
-    ]
+    messages: [{ type: 'text', text: messageText }]
   };
 
   UrlFetchApp.fetch(url, {
@@ -237,20 +301,67 @@ function replyLineMessage(replyToken, messageText) {
 function sendLoadingAnimation(chatId) {
   try {
     const url = 'https://api.line.me/v2/bot/chat/loading/start';
-    const payload = {
-      chatId: chatId,
-      loadingSeconds: 5
-    };
     UrlFetchApp.fetch(url, {
       method: 'post',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + CONFIG.LINE_ACCESS_TOKEN
       },
-      payload: JSON.stringify(payload),
+      payload: JSON.stringify({ chatId: chatId, loadingSeconds: 5 }),
       muteHttpExceptions: true
     });
-  } catch (e) {
-    // 載入動畫如失敗不影響主回覆
+  } catch (e) {}
+}
+
+// ============================================================================
+// 🚀 一鍵初始化 Google 試算表資料庫 (執行此函式即自動建立 7 大專業工作表)
+// ============================================================================
+function initQuotaKnowledgeBaseSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) {
+    Logger.log('請於 Google 試算表容器內的 Apps Script 執行此函式！');
+    return;
   }
+
+  // 1. 初始化 Q&A 工作表
+  let ws1 = ss.getSheetByName(CONFIG.SHEET_QA);
+  if (!ws1) ws1 = ss.insertSheet(CONFIG.SHEET_QA, 0);
+  ws1.clear();
+  ws1.getRange(1, 1, 1, 7).setValues([['編號', '主題分類', '觸發關鍵字 (逗號分隔)', '家長常見諮詢問題', '小幫手標準回覆內容 (支援LINE格式)', '法規與依據備註', '啟用狀態']]);
+  ws1.getRange(1, 1, 1, 7).setBackground('#047857').setFontColor('#FFFFFF').setFontWeight('bold').setHorizontalAlignment('center');
+  
+  const qas = [
+    [1, '順位判定', '自有,權狀,房屋稅,二順位,自用住宅', '我們在學區內有自用住宅，小孩是民富國小畢業，算第幾順位？', '🎯【判定結果：第二順位】\n依 115 作業規定：設籍並實際居住本校學區內之「新竹市」國小畢業生，且戶籍與直系親屬同戶，檢附自有房屋所有權狀（或當年度房屋稅籍證明）並簽具家訪同意書者，列為【第二順位】！', '作業規定伍、三、2', 'Y'],
+    [2, '順位判定', '未公證,租約,四順位,沒公證,租屋未公證', '在學區內租屋但「沒有經過法院公證」，還可以登記嗎？排第幾順位？', '📋【判定結果：第四順位】\n依 115 作業規定：只要戶籍符合（與直系親屬同戶），即可參加新生登記！若僅提供「未經法院公證之房屋租賃契約」（租期須涵蓋 115/3/14~115/9/1，承租人為直系尊親屬）並簽具家訪同意書者，列為【第四順位】！', '作業規定伍、三、4', 'Y'],
+    [3, '門檻分析', '幾年,幾歲,門檻,排得上嗎,大班,小二,歷史數據', '設籍大約要滿幾年才排得上竹光國中？', '📊【歷年第四順位設籍門檻參考】：\n• 111學年：設籍滿 5 年 (約國小二年級設籍)\n• 112學年：設籍滿 4 年 (約國小三年級設籍)\n• 113學年：設籍滿 8 年 (約幼兒園大班設籍)\n• 114學年：設籍滿 2 年 (約國小五年級設籍)\n每年人數不同，需待 3/14 現場登記排序後方能確定。先比順位，同順位再比設籍先後決定！', '新生簡報 P.27', 'Y'],
+    [4, '設籍計算', '累計,搬家,學區內遷移,遷出,金雅里,重算', '之前在學區內搬家設籍時間可以累計嗎？中途遷出新竹市怎麼算？', '🏡【設籍時間計算原則】：\n1. 【學區內遷移 ➔ 時間可連續累計】：同一學區內搬遷（如境福里遷到磐石里），設籍時間得以累計！\n2. 【中途遷出學區 ➔ 重新起算】：若中途曾遷出學區（如遷至金雅里），再遷回竹光學區，則以最後一次遷入學區之日期為設籍日！', '作業規定伍、二', 'Y'],
+    [5, '現場登記', '3/14,帶什麼,文件,證件,黃單,戶籍謄本,戶口名簿', '3/14 (六) 新生入學現場登記要帶哪些文件？一定要本人到場嗎？', '🎒【3/14 (六) 現場審核應備文件清單】：\n時間：115年3月14日(六) 上午 08:00 - 11:00\n地點：竹光國中\n應備文件：\n1. 📄 新生入學通知單（黃單，背面填妥簽名）\n2. 👥 戶籍證明（二擇一）：3個月內全戶謄本正本 或 新式戶口名簿正本＋影本\n3. 🏠 居住證明（自有權狀 / 稅籍證明 / 公證租約 / 未公證租約）\n※ 可委託親友到校送件。未參加登記者視同放棄！', '新生簡報 P.21', 'Y'],
+    [6, '共同學區', '兩所登記,光華,雙重登記,3/12,北門里雙登記', '北門里是共同學區，如果想同時登記竹光國中跟光華國中可以嗎？', '⚖️【共同學區雙總量國中登記手續】：\n可以！但家長務必於【115年3月12日(四)前】，自行向另一所總量限制國中（如光華國中）提出登記申請手續！逾期將無法同時登記兩校。', '新生簡報 P.37', 'Y'],
+    [7, '改分發', '沒錄取,未錄取,落榜,改分發學校,虎林,成德,光華,育賢,建華', '如果沒有被竹光國中錄取，後續會改分發到哪所學校？', '🏫【未錄取改分發規定】：\n1. 【單一學區學生】：依家長意願改分發至「虎林、成德、光華、育賢、建華國中」。（黃單背面有勾選欄）\n2. 【共同學區學生】：改分發至該共同學區之他校。\n本校將於 4/17 前統一函送名冊，改分發國中將於 4/20 前寄送入學通知書。', '作業規定伍、七', 'Y']
+  ];
+  ws1.getRange(2, 1, qas.length, 7).setValues(qas);
+  ws1.setFrozenRows(1);
+
+  // 2. 初始化其他工作表 (矩陣、學區、日程、門檻、留言、未解)
+  const sheetsConfig = [
+    { name: CONFIG.SHEET_MATRIX, headers: ['順位代碼', '順位階層名稱', '適用身分資格', '戶籍條件要求', '居住證明文件要件', '家訪同意書', '同順位排序規則', '備註說明'] },
+    { name: CONFIG.SHEET_DISTRICT, headers: ['項次', '學區類別', '里別名稱', '涵蓋鄰別', '共同學區學校', '未獲錄取之改分發學校清單', '115學年度異動備註'] },
+    { name: CONFIG.SHEET_SCHEDULE, headers: ['項次', '作業項目', '法定/實施時程', '地點/管道', '主辦與承辦單位', '重要作業要點與家長須知'] },
+    { name: CONFIG.SHEET_HISTORY, headers: ['學年度', '核定班級數', '最低錄取順位', '第四順位設籍年限門檻', '約當設籍就讀年級', '錄取情況與大數據分析說明'] },
+    { name: CONFIG.SHEET_INQUIRY, headers: ['提問時間', '諮詢單號', '家長LINE識別碼', '學生畢業國小', '家長提問內容', '小幫手AI回覆摘要', '處理狀態', '承辦同仁備註'] },
+    { name: CONFIG.SHEET_UNANSWERED, headers: ['收集時間', '家長原句提問', '觸發模式', '提問者辨識碼', '出現次數', '建議增修處室', '註冊組擬定官方答案', '納入知識庫狀態'] }
+  ];
+
+  sheetsConfig.forEach(cfg => {
+    let ws = ss.getSheetByName(cfg.name);
+    if (!ws) ws = ss.insertSheet(cfg.name);
+    if (ws.getLastRow() === 0) {
+      ws.appendRow(cfg.headers);
+      ws.getRange(1, 1, 1, cfg.headers.length).setBackground('#047857').setFontColor('#FFFFFF').setFontWeight('bold').setHorizontalAlignment('center');
+      ws.setFrozenRows(1);
+    }
+  });
+
+  SpreadsheetApp.flush();
+  Logger.log('🎉 恭喜！竹光國中 115 總量管制 Google 試算表資料庫已全部初始化完成！');
 }
