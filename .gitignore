@@ -2,3 +2,4 @@
 .netlify/
 *.pyc
 __pycache__/
+.wrangler/
