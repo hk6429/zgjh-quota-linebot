@@ -372,6 +372,7 @@ html_content = r'''<!DOCTYPE html>
               <button onclick="triggerCustomKeyword('北門里學區')" class="px-2.5 py-1 rounded-lg bg-slate-700/80 hover:bg-emerald-600/30 hover:border-emerald-400/50 border border-slate-600 text-[11px] text-slate-200 transition">北門里學區</button>
               <button onclick="triggerCustomKeyword('沒錄取去哪裡')" class="px-2.5 py-1 rounded-lg bg-slate-700/80 hover:bg-emerald-600/30 hover:border-emerald-400/50 border border-slate-600 text-[11px] text-slate-200 transition">改分發學校</button>
               <button onclick="triggerCustomKeyword('線上報到日期')" class="px-2.5 py-1 rounded-lg bg-slate-700/80 hover:bg-emerald-600/30 hover:border-emerald-400/50 border border-slate-600 text-[11px] text-slate-200 transition">重要時程</button>
+              <button onclick="triggerCustomKeyword('#記住 雙胞胎同班申請 3/14登記時於黃單背面勾選即可')" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 border border-emerald-400 text-[11px] text-white font-bold transition flex items-center"><i class="fa-solid fa-plus-circle mr-1"></i>#記住 新增內容</button>
               <button onclick="triggerCustomKeyword('#提問 請問繼承過戶中算自有嗎')" class="px-2.5 py-1 rounded-lg bg-emerald-700/70 hover:bg-emerald-600 border border-emerald-500 text-[11px] text-white transition">在線登記提問</button>
             </div>
           </div>
@@ -479,7 +480,7 @@ html_content = r'''<!DOCTYPE html>
                 <input 
                   type="text" 
                   id="simInputText" 
-                  placeholder="輸入問題或以 #提問 諮詢..." 
+                  placeholder="輸入問題，或打 #記住 [問題] [回答] 新增內容..." 
                   class="flex-1 bg-slate-100 border border-slate-200 rounded-full px-3.5 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                   onkeydown="if(event.key === 'Enter') handleUserInput()"
                 >
@@ -1140,6 +1141,17 @@ function initQuotaKnowledgeBaseSheet() {
         botName: '竹光 總量管制法規查核助手',
         prompts: [
           {
+            btnText: '⚡ 前端動態新增：#記住 [問題] [回答] (直接寫入試算表)',
+            userText: '#記住 雙胞胎同班申請 可以在3/14現場資格審核登記時，於入學登記表黃單背面直接勾選申請同班或不同班！',
+            botReply: '✅【已成功為您記住並寫入 Google 試算表！】
+━━━━━━━━━━━━━━
+• 題目關鍵字：雙胞胎同班申請
+• 回覆內容：可以在3/14現場資格審核登記時，於入學登記表黃單背面直接勾選申請同班或不同班！
+• 儲存位置：Google 試算表「總量管制Q&A知識庫」
+
+💡 下次家長或同仁在 LINE 提問「雙胞胎同班申請」，小幫手將即時採用此內容回答！'
+          },
+          {
             btnText: '共同學區：北門里/新雅里19鄰想同時登記兩校之規定？',
             userText: '同仁請教：家長戶籍在北門里（竹光、光華、建華共同學區），如果想同時去光華國中和竹光國中登記，規定是怎樣？',
             botReply: '⚖️【共同學區雙總量國中登記作業要點】：\n━━━━━━━━━━━━━━\n1. 本校與光華、建華為共同學區（北門里 115 新增），排序基準點與單一學區完全相同（先比順位，同順位比設籍時間）。\n2. 若共同學區包含另一所總量管制學校，家長【可以兩所都登記】！\n3. ⚠️ 關鍵時效：家長必須在【115年3月12日(四)前】，自行向另一所總量國中提出登記申請！\n4. 共同學區未獲錄取者，依家長意願改分發至該共同學區之他校。'
@@ -1303,10 +1315,54 @@ function initQuotaKnowledgeBaseSheet() {
       triggerChatMessage(text, reply);
     }
 
+    // 動態記憶庫 (支援前端 #記住 即時寫入並即時生效)
+    const dynamicMemory = [];
+
     function generateSmartAnswer(text) {
       const t = text.toLowerCase();
 
-      // 處理 #提問 / #留言
+            // 1. 處理 #記住 / #新增 / #記憶 指令 (前端即時擴充試算表知識庫)
+      if (t.startsWith('#記住') || t.startsWith('#新增') || t.startsWith('#記憶')) {
+        const rawContent = text.replace(/^[#＃](記住|新增|記憶)\s*/, '').trim();
+        if (!rawContent) {
+          return '💡【#記住 指令使用說明】：\n請輸入「#記住 [問題或關鍵字] [回答內容]」\n\n例如：\n#記住 雙胞胎同班申請 可以在3/14現場登記時於黃單背面直接勾選同班或不同班！\n\n小幫手將為您同步寫入 Google 試算表，隨後家長提問即可秒速解答！';
+        }
+
+        let question = '';
+        let answer = '';
+        if (rawContent.includes('\n')) {
+          const parts = rawContent.split('\n');
+          question = parts[0].trim();
+          answer = parts.slice(1).join('\n').trim();
+        } else {
+          const spaceIdx = rawContent.search(/[\s　]+/);
+          if (spaceIdx > 0) {
+            question = rawContent.substring(0, spaceIdx).trim();
+            answer = rawContent.substring(spaceIdx).trim();
+          } else {
+            return '⚠️ 請以「空格」或「換行」分開問題與回答內容！\n例如：#記住 制服去哪買 開學前可至合作社或特約門市購買。';
+          }
+        }
+
+        if (!question || !answer) {
+          return '⚠️ 請確認已輸入「問題」與「回答內容」！\n格式：#記住 [問題] [回答]';
+        }
+
+        // 即時存入動態記憶中，本對話 session 隨後即時生效！
+        dynamicMemory.unshift({ q: question.toLowerCase(), rawQ: question, a: answer });
+
+        return `✅【已成功為您記住並寫入 Google 試算表！】\n━━━━━━━━━━━━━━\n• 題目關鍵字：${question}\n• 回覆內容：${answer}\n• 儲存位置：Google 試算表「總量管制Q&A知識庫」\n\n💡 現在您可以直接在輸入框輸入「${question}」，小幫手已經學會並會立即回答這題囉！`;
+      }
+
+      // 2. 先檢查是否有剛才透過 #記住 新增的自訂問題
+      for (let i = 0; i < dynamicMemory.length; i++) {
+        const item = dynamicMemory[i];
+        if (t.includes(item.q) || item.q.includes(t)) {
+          return item.a;
+        }
+      }
+
+      // 3. 處理 #提問 / #留言
       if (t.startsWith('#提問') || t.startsWith('#留言') || t.startsWith('#諮詢')) {
         const query = text.replace(/^[#＃](提問|留言|諮詢)\s*/, '').trim();
         const randomNo = 'Q' + Math.floor(100000 + Math.random() * 900000);

@@ -92,6 +92,13 @@ function handleTextMessage(event) {
     return;
   }
 
+  // 3. 檢查是否為「#記住」或「#新增」指令 (直接寫入試算表知識庫)
+  if (userText.startsWith('#記住') || userText.startsWith('#新增') || userText.startsWith('#記憶')) {
+    const rememberReply = handleRememberCommand(userText, userId);
+    replyLineMessage(replyToken, rememberReply);
+    return;
+  }
+
   // 3. 從 Google 試算表即時比對問答庫 (零快取 RAG)
   const sheetReply = findAnswerFromGoogleSheet(userText);
   if (sheetReply) {
@@ -153,6 +160,69 @@ function findAnswerFromGoogleSheet(query) {
   } catch (err) {
     console.error('findAnswerFromGoogleSheet error:', err);
     return null;
+  }
+}
+
+// ======================= #記住 指令：新增內容至試算表知識庫 =======================
+function handleRememberCommand(rawText, userId) {
+  try {
+    const content = rawText.replace(/^[#＃](記住|新增|記憶)\s*/, '').trim();
+    if (!content) {
+      return `💡【#記住 指令格式說明】：\n您可以直接在 LINE 輸入：\n「#記住 [問題/關鍵字] [回答內容]」\n\n例如：\n#記住 雙胞胎同班申請 可以在3/14現場登記時於入學登記表勾選申請「同班」或「不同班」！\n\n系統將自動寫入 Google 試算表，隨後家長提問即可秒速獲得解答！`;
+    }
+
+    let question = '';
+    let answer = '';
+
+    if (content.includes('\n')) {
+      const parts = content.split('\n');
+      question = parts[0].trim();
+      answer = parts.slice(1).join('\n').trim();
+    } else {
+      const spaceIdx = content.search(/[\s　]+/);
+      if (spaceIdx > 0) {
+        question = content.substring(0, spaceIdx).trim();
+        answer = content.substring(spaceIdx).trim();
+      } else {
+        return `⚠️ 請以「空格」或「換行」分開問題與回答內容！\n例：#記住 制服去哪買 開學前可至合作社或特約門市購買。`;
+      }
+    }
+
+    if (!question || !answer) {
+      return `⚠️ 請確認已輸入「問題」與「回答內容」！\n格式：#記住 [問題] [回答]`;
+    }
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (!ss) {
+      return `⚠️ 找不到綁定的 Google 試算表，請確認 Apps Script 已綁定於 Google 試算表專案中！`;
+    }
+
+    let ws = ss.getSheetByName(CONFIG.SHEET_QA);
+    if (!ws) {
+      initQuotaKnowledgeBaseSheet();
+      ws = ss.getSheetByName(CONFIG.SHEET_QA);
+    }
+
+    const lastRow = ws.getLastRow();
+    const newId = lastRow >= 2 ? lastRow : 1;
+    const nowStr = Utilities.formatDate(new Date(), 'GMT+8', 'yyyy/MM/dd HH:mm');
+
+    const newRowData = [
+      newId,
+      'LINE前端新增',
+      question,
+      question,
+      answer,
+      `LINE前端新增 (${nowStr})`,
+      'Y'
+    ];
+
+    ws.appendRow(newRowData);
+
+    return `✅【已成功為您記住並寫入 Google 試算表！】\n━━━━━━━━━━━━━━\n• 題目關鍵字：${question}\n• 回覆內容：${answer}\n• 儲存位置：Google 試算表「${CONFIG.SHEET_QA}」第 ${lastRow + 1} 列\n\n💡 下次家長提問「${question}」時，小幫手將即時採用此內容回答！`;
+  } catch (err) {
+    console.error('handleRememberCommand error:', err);
+    return `⚠️ 寫入失敗：${err.toString()}`;
   }
 }
 
