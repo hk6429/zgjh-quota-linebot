@@ -14,8 +14,31 @@ CODE_GS_PATH = os.path.join(BASE_DIR, 'Code.gs')
 GAS_INDEX_PATH = os.path.join(BASE_DIR, 'gas_index.html')
 OUTPUT_PATH = os.path.join(BASE_DIR, 'index.html')
 
+KB_PATH = os.path.join(BASE_DIR, 'knowledge_base.json')
+MATCHER_PATH = os.path.join(BASE_DIR, 'kb_matcher.js')
+
+with open(KB_PATH, 'r', encoding='utf-8') as f:
+    KB = json.load(f)
+with open(MATCHER_PATH, 'r', encoding='utf-8') as f:
+    matcher_js = f.read()
+# GAS 不需要 module.exports 那行
+matcher_js_gas = '\n'.join(l for l in matcher_js.splitlines() if not l.startswith('if (typeof module'))
+
+def inject_between(text, start_marker, end_marker, payload):
+    a = text.index(start_marker) + len(start_marker)
+    b = text.index(end_marker)
+    return text[:a] + '\n' + payload + '\n' + text[b:]
+
+# 把共用引擎與知識庫種子灌進 Code.gs（Code.gs 是要貼進 GAS 的成品，所以直接回寫檔案）
 with open(CODE_GS_PATH, 'r', encoding='utf-8') as f:
     code_gs_content = f.read()
+seed_js = 'const KB_SEED = ' + json.dumps(
+    {k: KB[k] for k in ('qa', 'matrix', 'district', 'schedule', 'history')},
+    ensure_ascii=False, indent=2) + ';'
+code_gs_content = inject_between(code_gs_content, '// __KB_MATCHER_START__', '// __KB_MATCHER_END__', matcher_js_gas)
+code_gs_content = inject_between(code_gs_content, '// __KB_SEED_START__', '// __KB_SEED_END__', seed_js)
+with open(CODE_GS_PATH, 'w', encoding='utf-8') as f:
+    f.write(code_gs_content)
 
 with open(GAS_INDEX_PATH, 'r', encoding='utf-8') as f:
     gas_index_content = f.read()
@@ -456,16 +479,17 @@ html_template = """<!DOCTYPE html>
         <div class="rounded-3xl p-6 border-2 border-emerald-500/40 bg-gradient-to-b from-emerald-50/50 to-white shadow-sm hover:shadow-md transition">
           <div class="flex items-center justify-between mb-4">
             <span class="px-3 py-1 rounded-xl bg-emerald-600 text-white font-black text-xs">第一順位</span>
-            <span class="text-emerald-700 font-bold text-xs"><i class="fa-solid fa-check-double mr-1"></i>優先保障入學</span>
+            <span class="text-emerald-700 font-bold text-xs"><i class="fa-solid fa-check-double mr-1"></i>法定特殊身分</span>
           </div>
-          <h3 class="text-lg font-bold text-slate-900 mb-2">身心障礙、低收、派外人員子女</h3>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">少年保護、低收、父母雙亡、教職員子女、資源生</h3>
           <p class="text-xs text-slate-600 leading-relaxed space-y-1 mb-4">
-            • 經竹市特教通報網鑑定安置之身心障礙學生<br>
-            • 設籍學區之低收入戶子女<br>
-            • 派赴公務出國人員子女或政府派外同仁隨行子女
+            • 經縣市政府轉介安置之少年保護個案<br>
+            • 設籍本市且居住學區內之列冊低收入戶子女、父母雙亡學童<br>
+            • 本校現職編制內教職員工子女、受監護人（隨父母就讀所服務學校）<br>
+            • 經市府鑑定並安置之資源生
           </p>
           <div class="pt-3 border-t border-emerald-100 text-[11px] text-slate-500">
-            <strong>審驗文件：</strong>鑑輔會公文、竹市低收入戶證明、派令證明文件。
+            <strong>審驗要點：</strong>主管機關核定公文或列冊證明；除教職員子女外均實地查訪居住事實。
           </div>
         </div>
 
@@ -512,7 +536,7 @@ html_template = """<!DOCTYPE html>
           <h3 class="text-lg font-bold text-slate-900 mb-2">未公證租約 / 居住事實證明者</h3>
           <p class="text-xs text-slate-600 leading-relaxed space-y-1 mb-4">
             • 設籍本校學區且直系尊親屬同戶之國小畢業生<br>
-            • 僅檢附「未經法院公證之租賃契約」或其他居住證明文件<br>
+            • 僅能檢附「未經法院公證之房屋租賃契約」<br>
             • 簽具家訪同意書（租約需涵蓋 115/3/14~9/1，承租人為直系尊親屬）
           </p>
           <div class="pt-3 border-t border-amber-100 text-[11px] text-slate-500">
@@ -524,33 +548,33 @@ html_template = """<!DOCTYPE html>
         <div class="rounded-3xl p-6 border border-slate-200 bg-white shadow-sm hover:shadow-md transition">
           <div class="flex items-center justify-between mb-4">
             <span class="px-3 py-1 rounded-xl bg-slate-700 text-white font-black text-xs">第五順位</span>
-            <span class="text-slate-500 font-bold text-xs"><i class="fa-solid fa-school mr-1"></i>教職員工子女</span>
+            <span class="text-slate-500 font-bold text-xs"><i class="fa-solid fa-file-circle-xmark mr-1"></i>戶籍符合、無居住證明</span>
           </div>
-          <h3 class="text-lg font-bold text-slate-900 mb-2">本校現職編制內教職員工子女</h3>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">戶籍符合但無法提供居住證明文件</h3>
           <p class="text-xs text-slate-600 leading-relaxed space-y-1 mb-4">
-            • 竹光國中現職編制內教職員工隨行就讀子女<br>
-            • 保障隨親就讀安心教學權利<br>
-            • 依相關教育人員子女就讀要點辦理
+            • 設籍本校學區且與直系尊親屬或法定監護人同戶之國小畢業生<br>
+            • 沒有權狀、沒有租約，或居住文件不符規定（承租人非直系、租期未涵蓋 3/14～9/1）<br>
+            • 簽具家訪同意書即可參加排序
           </p>
           <div class="pt-3 border-t border-slate-100 text-[11px] text-slate-500">
-            <strong>審驗要點：</strong>人事室在職員工證明及親屬關係證明。
+            <strong>排序標準：</strong>依戶籍遷入學區時間先後排序；補未公證租約可升第四順位。
           </div>
         </div>
 
         <!-- 順位六 -->
         <div class="rounded-3xl p-6 border border-slate-200 bg-white shadow-sm hover:shadow-md transition">
           <div class="flex items-center justify-between mb-4">
-            <span class="px-3 py-1 rounded-xl bg-slate-700 text-white font-black text-xs">第六順位</span>
-            <span class="text-slate-500 font-bold text-xs"><i class="fa-solid fa-user-xmark mr-1"></i>非直系寄居/缺文件</span>
+            <span class="px-3 py-1 rounded-xl bg-slate-700 text-white font-black text-xs">第六順位（最後順位）</span>
+            <span class="text-slate-500 font-bold text-xs"><i class="fa-solid fa-user-xmark mr-1"></i>未簽家訪同意書 / 空戶</span>
           </div>
-          <h3 class="text-lg font-bold text-slate-900 mb-2">未符合前五順位之設籍學生</h3>
+          <h3 class="text-lg font-bold text-slate-900 mb-2">無法簽具家訪同意書，或經查為空戶</h3>
           <p class="text-xs text-slate-600 leading-relaxed space-y-1 mb-4">
-            • 學生僅寄居學區而未與直系尊親屬同戶者<br>
-            • 無法提出有效居住證明文件者<br>
-            • 或無法配合居住事實查核者
+            • 符合入學資格但無法簽具（或不同意）家訪同意書者<br>
+            • 經訪查已遷居學區外、非實際居住或為空戶（人籍分離）者<br>
+            • ※ 戶籍內無直系尊親屬同戶者「無法登記」，連順位都沒有
           </p>
           <div class="pt-3 border-t border-slate-100 text-[11px] text-slate-500">
-            <strong>處理方式：</strong>輔導改分發至虎林、成德、光華、育賢、建華等國中。
+            <strong>處理方式：</strong>列最後順位錄取，空戶者勸導轉入實際居住學區之學校。
           </div>
         </div>
 
@@ -1087,18 +1111,20 @@ html_template = """<!DOCTYPE html>
     // 動態記憶庫 (支援前端 #記住 即時寫入並即時生效)
     const dynamicMemory = [];
 
-    function generateSmartAnswer(text) {
-      const t = text.toLowerCase();
+    // 共用比對引擎與知識庫（build_site.py 從 kb_matcher.js / knowledge_base.json 注入，與 Code.gs 完全同一份）
+__KB_MATCHER_JS__
+    const KB_ROWS = __KB_QA_JSON__;
 
-      // 1. 處理 #記住 / #新增 / #記憶 指令 (前端即時擴充試算表知識庫)
-      if (t.startsWith('#記住') || t.startsWith('#新增') || t.startsWith('#記憶')) {
-        const rawContent = text.replace(/^[#＃](記住|新增|記憶)\\s*/, '').trim();
+    function generateSmartAnswer(text) {
+      const t = text.trim();
+
+      // 1. #記住 / #新增 / #記憶：即時寫入前端記憶（模擬試算表 appendRow）
+      if (/^[#＃](記住|新增|記憶)/.test(t)) {
+        const rawContent = t.replace(/^[#＃](記住|新增|記憶)\\s*/, '').trim();
         if (!rawContent) {
           return '💡【#記住 指令使用說明】：\\n請輸入「#記住 [問題或關鍵字] [回答內容]」\\n\\n例如：\\n#記住 雙胞胎同班申請 可以在3/14現場登記時於黃單背面直接勾選同班或不同班！\\n\\n小幫手將為您同步寫入 Google 試算表，隨後家長提問即可秒速解答！';
         }
-
-        let question = '';
-        let answer = '';
+        let question = '', answer = '';
         if (rawContent.includes('\\n')) {
           const parts = rawContent.split('\\n');
           question = parts[0].trim();
@@ -1112,64 +1138,23 @@ html_template = """<!DOCTYPE html>
             return '⚠️ 請以「空格」或「換行」分開問題與回答內容！\\n例如：#記住 制服去哪買 開學前可至合作社或特約門市購買。';
           }
         }
-
-        if (!question || !answer) {
-          return '⚠️ 請確認已輸入「問題」與「回答內容」！\\n格式：#記住 [問題] [回答]';
-        }
-
-        // 即時存入動態記憶中，本對話 session 隨後即時生效！
-        dynamicMemory.unshift({ q: question.toLowerCase(), rawQ: question, a: answer });
-
+        if (!question || !answer) return '⚠️ 請確認已輸入「問題」與「回答內容」！\\n格式：#記住 [問題] [回答]';
+        dynamicMemory.push({ id: 'M' + (dynamicMemory.length + 1), category: 'LINE前端新增', keywords: question, question: question, answer: answer, status: 'Y' });
         return '✅【已成功為您記住並寫入 Google 試算表！】\\n━━━━━━━━━━━━━━\\n• 題目關鍵字：' + question + '\\n• 回覆內容：' + answer + '\\n• 儲存位置：Google 試算表「總量管制Q&A知識庫」\\n\\n💡 現在您可以直接在輸入框輸入「' + question + '」，小幫手已經學會並會立即回答這題囉！';
       }
 
-      // 2. 先檢查是否有剛才透過 #記住 新增的自訂問題
-      for (let i = 0; i < dynamicMemory.length; i++) {
-        const item = dynamicMemory[i];
-        if (t.includes(item.q) || item.q.includes(t)) {
-          return item.a;
-        }
-      }
-
-      // 3. 處理 #提問 / #留言
-      if (t.startsWith('#提問') || t.startsWith('#留言') || t.startsWith('#諮詢')) {
-        const query = text.replace(/^[#＃](提問|留言|諮詢)\\s*/, '').trim();
+      // 2. #提問 / #留言 / #諮詢
+      if (/^[#＃](提問|留言|諮詢)/.test(t)) {
+        const query = t.replace(/^[#＃](提問|留言|諮詢)\\s*/, '').trim();
         const randomNo = 'Q' + Math.floor(100000 + Math.random() * 900000);
         return '📝【已為您登錄家長在線諮詢工單】\\n━━━━━━━━━━━━━━\\n• 諮詢單號：' + randomNo + '\\n• 提問內容：' + (query || '個人戶籍審查諮詢') + '\\n• 記錄位置：Google 試算表「家長在線提問紀錄簿」\\n• 處理狀態：待查覆 (已同步通知註冊組同仁)\\n\\n同仁將儘速為您查核法規，您亦可於上班時間致電：(03) 524-6683 #613 洽詢！';
       }
 
-      if (t.includes('未公證') || t.includes('沒公證')) {
-        return '📋【115學年度 錄取順位判定：第四順位】\\n━━━━━━━━━━━━━━\\n依竹光國中 115 作業規定：\\n• 設籍學區之國小畢業生且與直系親屬同戶。\\n• 僅提供「未經法院公證之房屋租賃契約」（租期涵蓋 115/3/14～9/1，承租人為直系尊親屬）。\\n• 簽具家訪同意書。\\n➔ 列為【第四順位】。\\n\\n同順位將依戶籍遷入學區時間排序。';
-      }
-      if (t.includes('權狀') || t.includes('自有') || t.includes('稅籍')) {
-        return '🏠【判定：第二順位（本市）/ 第三順位（外縣市）】\\n━━━━━━━━━━━━━━\\n新竹市國小畢業生檢附自有房屋所有權狀或當年度房屋稅籍證明，並簽具家訪同意書者，列為【第二順位】；外縣市國小畢業生同條件者列為【第三順位】！\\n\\n房屋所有權人須為學生直系親屬或監護人。';
-      }
-      if (t.includes('公證') && (t.includes('租') || t.includes('約'))) {
-        return '⚖️【法院公證租約 ➔ 升級第二順位】\\n━━━━━━━━━━━━━━\\n租屋家庭若檢附「經法院公證之房屋租賃契約證明」（租賃日期須涵蓋 115/3/14 新生登記日至 9/1 開學日，承租人為直系尊親屬），並簽具家訪同意書，即可列為【第二順位】（外縣市國小為第三順位）！';
-      }
-      if (t.includes('幾年') || t.includes('幾歲') || t.includes('多久') || t.includes('排得上') || t.includes('門檻')) {
-        return '📊【歷年第四順位設籍門檻參考】：\\n• 111學年：設籍滿 5 年 (約小二設籍)\\n• 112學年：設籍滿 4 年 (約小三設籍)\\n• 113學年：設籍滿 8 年 (約大班設籍)\\n• 114學年：設籍滿 2 年 (約小五設籍)\\n\\n每年名額依實際登記狀況排序，請家長於 3/14 現場送件登記。';
-      }
-      if (t.includes('文件') || t.includes('帶什麼') || t.includes('黃單') || t.includes('證件') || t.includes('戶籍謄本') || t.includes('3/14')) {
-        return '🎒【3/14 (六) 現場審核應備文件清單】：\\n━━━━━━━━━━━━━━\\n1. 📄 新生入學通知單（黃單，背面登記表及家訪同意書填妥簽名）\\n2. 👥 戶籍文件（必要，二擇一）：\\n   • 3個月內全戶戶籍謄本正本\\n   • 新式戶口名簿正本＋影本（驗畢退還正本，須含詳細記事）\\n3. 🏠 居住證明文件（自有房屋權狀 / 稅籍證明 / 公證租約 / 未公證租約）\\n\\n時間：115年3月14日(六) 上午 08:00 - 11:00\\n地點：竹光國中';
-      }
-      if (t.includes('學區') || t.includes('北門') || t.includes('新雅') || t.includes('民富') || t.includes('境福') || t.includes('中雅') || t.includes('南勢') || t.includes('客雅') || t.includes('文雅') || t.includes('長和') || t.includes('新民')) {
-        return '🗺️【竹光國中學區與共同學區】：\\n━━━━━━━━━━━━━━\\n• 單一學區：民富里、磐石里、新雅里 1-18 及 20-27 鄰\\n• 共同學區：\\n  - 北門里 1-5、7-10、12、13、16、17 鄰 (竹光/光華/建華，115新增)\\n  - 新雅里 19 鄰 (竹光/虎林)\\n  - 南勢里、客雅里 (竹光/虎林/成德)\\n  - 境福里 (竹光/光華)、文雅里 (竹光/成德/光華)\\n  - 長和里、新民里 (竹光/育賢/光華)\\n  - 中雅里 (竹光/成德/虎林)';
-      }
-      if (t.includes('沒錄取') || t.includes('未錄取') || t.includes('改分發') || t.includes('轉分發')) {
-        return '🏫【未錄取學生改分發規定】：\\n━━━━━━━━━━━━━━\\n• 單一學區未錄取：依家長意願改分發至「虎林、成德、光華、育賢、建華國中」。（黃單背面有志願勾選欄）\\n• 共同學區未錄取：改分發至該共同學區之他校。\\n學校將於 4/17 前統一函送改分發名冊，各改分發學校於 4/20 前寄送入學通知。';
-      }
-      if (t.includes('報到') || t.includes('日程') || t.includes('測驗') || t.includes('考試') || t.includes('放榜')) {
-        return '📅【重要時程】：\\n• 03/14(六) 08:00-11:00：新生入學現場登記審核\\n• 03/23(一) 16:00：公告錄取結果\\n• 03/30(一)-04/04(六)：正取生線上報到\\n• 04/07(二)-04/08(三)：警衛室實體報到\\n• 04/15(三)前：備取遞補報到作業\\n• 05/30(六) 09:00-11:30：新生學力測驗';
-      }
-      if (t.includes('轉學') || t.includes('轉入') || t.includes('學期中')) {
-        return '🔄【學期中轉學規定】：\\n總量限制學校學期中各年級「僅得轉出，不得轉入」！學期中轉出缺額統一於寒暑假辦理補實，按設籍時間優先順序公開分發。';
-      }
-      if (t.includes('電話') || t.includes('分機') || t.includes('地址') || t.includes('幾班')) {
-        return 'ℹ️【竹光國中招生基本資訊】：\\n• 招生規模：115學年度核定 12 班\\n• 承辦單位：教務處註冊組\\n• 諮詢專線：(03) 524-6683 分機 613\\n• 學校地址：新竹市北區和平路 1 號';
-      }
+      // 3. 官方知識庫 + #記住 新增列，同一套加權比對（與 Code.gs findAnswerFromGoogleSheet 一致）
+      const hit = kbMatch(t, KB_ROWS.concat(dynamicMemory));
+      if (hit) return hit.answer;
 
-      return '您好！我是【竹光國中 115學年度總量管制智慧小幫手】。\\n\\n您可嘗試詢問：\\n• 「租約未公證算第幾順位？」\\n• 「有房屋所有權狀算第幾順位？」\\n• 「設籍大約幾年能錄取？」\\n• 「3/14 登記要帶什麼證件？」\\n• 「北門里算竹光學區嗎？」\\n• 「沒錄取會改分發去哪裡？」\\n• 或輸入「#記住 [題目] [回答]」新增知識庫！\\n• 或輸入「#提問 [內容]」登記在線諮詢！\\n\\n亦可致電註冊組：(03) 524-6683 #613 洽詢！';
+      return '您好！我是【竹光國中 115學年度總量管制智慧小幫手】。\\n\\n您可嘗試詢問：\\n• 「總量管制有哪些順位？」\\n• 「租約沒公證算第幾順位？」「沒有租約算第幾順位？」\\n• 「第四跟第五順位差在哪？」\\n• 「設籍大約幾年能錄取？」\\n• 「3/14 登記要帶什麼證件？」\\n• 「北門里算竹光學區嗎？」\\n• 「沒錄取會改分發去哪裡？」\\n• 或輸入「#記住 [題目] [回答]」新增知識庫！\\n• 或輸入「#提問 [內容]」登記在線諮詢！\\n\\n亦可致電註冊組：(03) 524-6683 #613 洽詢！';
     }
 
     function showToast(msg) {
@@ -1197,11 +1182,16 @@ html_template = """<!DOCTYPE html>
 # 安全替換佔位符
 final_html = html_template.replace('__ESCAPED_CODE_GS__', escaped_code_gs)
 final_html = final_html.replace('__ESCAPED_GAS_INDEX__', escaped_gas_index)
+# 模擬器：注入共用引擎與 Q&A（</script> 防呆：JSON 內不可出現 "</"）
+sim_rows = [{k: r[k] for k in ('id', 'category', 'keywords', 'question', 'answer', 'status')} for r in KB['qa']]
+kb_json = json.dumps(sim_rows, ensure_ascii=False).replace('</', '<\\/')
+final_html = final_html.replace('__KB_MATCHER_JS__', matcher_js_gas)
+final_html = final_html.replace('__KB_QA_JSON__', kb_json)
 
 with open(OUTPUT_PATH, 'w', encoding='utf-8') as f:
     f.write(final_html)
 
-print("✅ 成功生成 index.html！")
+print(f"✅ 成功生成 index.html！Q&A {len(KB['qa'])} 題已同步注入 Code.gs 與模擬器")
 print(f"   後端代碼長度：{len(code_gs_content)} 字元 ({len(code_gs_content.splitlines())} 行)")
 print(f"   前端代碼長度：{len(gas_index_content)} 字元 ({len(gas_index_content.splitlines())} 行)")
 print(f"   產出 index.html 檔案大小：{len(final_html)} 位元組")
