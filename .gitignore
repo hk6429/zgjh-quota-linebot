@@ -1,0 +1,4 @@
+.DS_Store
+.netlify/
+*.pyc
+__pycache__/
